@@ -3,6 +3,8 @@ from __future__ import annotations
 import math
 from pathlib import Path
 
+from tqdm import tqdm
+
 from .audio import read_wav, write_wav
 from .manifest import load_manifest
 from .models import ManifestNote, TrimConfig, TrimResult, TrimmedSample
@@ -27,7 +29,7 @@ def trim_note_stream(
     _validate_outputs(planned, config.overwrite)
 
     output_directory.mkdir(parents=True, exist_ok=True)
-    for sample in planned:
+    for sample in tqdm(planned):
         write_wav(
             sample.output_path,
             sample_rate,
