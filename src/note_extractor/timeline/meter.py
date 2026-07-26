@@ -1,50 +1,40 @@
 import itertools
 from collections.abc import Sequence
-from dataclasses import dataclass
 from fractions import Fraction
+from functools import cached_property
 from typing import Final, Self
 
-from ..errors import ConfigurationError
+from pydantic import Field, ValidationError
+
+from ..errors import MidiSourceError
 from ..midi.events import MeterChange
+from ..models import FrozenModel
 from .piecewise import PiecewiseTimeline, Segment
 
 BEATS_PER_WHOLE_NOTE: Final = 4
 
 
-@dataclass(frozen=True, slots=True)
-class TimeSignature:
-    """Measure written as a count of note values, such as three eighths for `3/8`.
+class TimeSignature(FrozenModel):
+    """Measure written as a count of note values, such as three eighths for `3/8`."""
 
-    Raises:
-        ConfigurationError: If either the numerator or the denominator is zero or negative.
-    """
-
-    numerator: int
-    denominator: int
-
-    def __post_init__(self) -> None:
-        if self.numerator <= 0:
-            raise ConfigurationError(f"time signature numerator must be positive: {self.numerator}")
-
-        if self.denominator <= 0:
-            raise ConfigurationError(f"time signature denominator must be positive: {self.denominator}")
+    numerator: int = Field(gt=0)
+    denominator: int = Field(gt=0)
 
 
 DEFAULT_SIGNATURE: Final = TimeSignature(numerator=4, denominator=4)
 
 
-@dataclass(frozen=True, slots=True)
-class ConstantMeter:
+class ConstantMeter(FrozenModel):
     """One time signature holding along a whole timeline, converting measures and ticks.
 
     A grid laid out in measures — the gap the arrangement leaves between two rendered notes —
     reads its tick span from here, which states that the whole grid shares one time signature.
     """
 
-    ticks_per_beat: int
+    ticks_per_beat: int = Field(gt=0)
     signature: TimeSignature
 
-    @property
+    @cached_property
     def measure_ticks(self) -> Fraction:
         """Ticks spanned by one measure."""
         return Fraction(
@@ -72,25 +62,19 @@ class MeterMap:
     def __init__(self, ticks_per_beat: int, changes: Sequence[tuple[int, TimeSignature]]) -> None:
         self.ticks_per_beat = ticks_per_beat
         self._timeline: PiecewiseTimeline[TimeSignature] = PiecewiseTimeline(changes, DEFAULT_SIGNATURE)
-        self._elapsed_measures = _elapsed_measures(self._timeline.segments, ticks_per_beat)
+        self._meters = tuple(
+            ConstantMeter(ticks_per_beat=ticks_per_beat, signature=segment.value) for segment in self._timeline.segments
+        )
+        self._elapsed_measures = _elapsed_measures(self._timeline.segments, self._meters)
 
     @classmethod
     def from_changes(cls, ticks_per_beat: int, changes: Sequence[MeterChange]) -> Self:
         """Map of the time signature changes carried by one performance.
 
         Raises:
-            ConfigurationError: If a change states a numerator or a denominator below one.
+            MidiSourceError: If a change states a numerator or a denominator below one.
         """
-        return cls(
-            ticks_per_beat,
-            [
-                (
-                    change.position.tick,
-                    TimeSignature(numerator=change.numerator, denominator=change.denominator),
-                )
-                for change in changes
-            ],
-        )
+        return cls(ticks_per_beat, [(change.position.tick, _stated_signature(change)) for change in changes])
 
     @classmethod
     def constant(cls, ticks_per_beat: int, signature: TimeSignature) -> Self:
@@ -99,27 +83,42 @@ class MeterMap:
 
     def meter_at(self, tick: int) -> ConstantMeter:
         """Meter holding at the given tick."""
-        return ConstantMeter(ticks_per_beat=self.ticks_per_beat, signature=self._timeline.value_at(tick))
+        return self._meters[self._timeline.index_at(tick)]
 
     def measures_at(self, tick: int) -> float:
         """Measures elapsed from tick zero up to the given tick."""
         index = self._timeline.index_at(tick)
         segment = self._timeline.segments[index]
-        meter = ConstantMeter(ticks_per_beat=self.ticks_per_beat, signature=segment.value)
-        return self._elapsed_measures[index] + meter.measures_for_ticks(tick - segment.start_tick)
+        return self._elapsed_measures[index] + self._meters[index].measures_for_ticks(tick - segment.start_tick)
 
     def measures_between(self, start_tick: int, end_tick: int) -> float:
         """Measures elapsed between two ticks."""
         return self.measures_at(end_tick) - self.measures_at(start_tick)
 
 
-def _elapsed_measures(segments: Sequence[Segment[TimeSignature]], ticks_per_beat: int) -> tuple[float, ...]:
+def _stated_signature(change: MeterChange) -> TimeSignature:
+    """Time signature carried by one meta message.
+
+    Raises:
+        MidiSourceError: If the numerator or the denominator is below one.
+    """
+    try:
+        return TimeSignature(numerator=change.numerator, denominator=change.denominator)
+    except ValidationError as error:
+        raise MidiSourceError(
+            f"invalid time signature {change.numerator}/{change.denominator} at tick {change.position.tick}"
+        ) from error
+
+
+def _elapsed_measures(
+    segments: Sequence[Segment[TimeSignature]],
+    meters: Sequence[ConstantMeter],
+) -> tuple[float, ...]:
     """Measures elapsed from tick zero up to the start of each segment."""
     total = Fraction(0)
     elapsed = [0.0]
-    for previous, segment in itertools.pairwise(segments):
-        meter = ConstantMeter(ticks_per_beat=ticks_per_beat, signature=previous.value)
-        total += Fraction(segment.start_tick - previous.start_tick, 1) / meter.measure_ticks
+    for index, (previous, segment) in enumerate(itertools.pairwise(segments)):
+        total += Fraction(segment.start_tick - previous.start_tick, 1) / meters[index].measure_ticks
         elapsed.append(float(total))
 
     return tuple(elapsed)

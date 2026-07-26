@@ -3,7 +3,11 @@ class NoteExtractorError(Exception):
 
 
 class MidiSourceError(NoteExtractorError):
-    """Reports a MIDI source that the parser rejects or that relies on unsupported timing."""
+    """Reports a MIDI source the pipeline declines to use.
+
+    The source may carry bytes the reader fails to parse, timing the reader leaves unsupported, or
+    values outside the ranges the timeline accepts.
+    """
 
 
 class ManifestError(NoteExtractorError):

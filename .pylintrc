@@ -7,6 +7,3 @@ disable=C0104,C0114,C0115,C0116,C0302,C0415,E0402,E1101,E1130,R0801,R0901,R0902,
 
 [FORMAT]
 max-line-length=120
-
-[TYPECHECK]
-ignored-modules=pydantic

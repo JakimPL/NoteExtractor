@@ -1,10 +1,10 @@
 from bisect import bisect_right
 from collections.abc import Sequence
-from dataclasses import dataclass
+
+from ..models import FrozenModel
 
 
-@dataclass(frozen=True, slots=True)
-class Segment[ValueT]:
+class Segment[ValueT](FrozenModel):
     """Stretch of ticks over which one value holds, beginning at `start_tick`."""
 
     start_tick: int

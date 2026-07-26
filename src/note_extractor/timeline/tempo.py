@@ -1,3 +1,4 @@
+import itertools
 from collections.abc import Sequence
 from typing import Final, Self
 
@@ -67,7 +68,7 @@ class TempoMap:
 def _elapsed_seconds(segments: Sequence[Segment[int]], ticks_per_beat: int) -> tuple[float, ...]:
     """Seconds elapsed from tick zero up to the start of each segment."""
     elapsed = [0.0]
-    for previous, segment in zip(segments, segments[1:], strict=False):
+    for previous, segment in itertools.pairwise(segments):
         span = _ticks_to_seconds(segment.start_tick - previous.start_tick, ticks_per_beat, previous.value)
         elapsed.append(elapsed[-1] + span)
 

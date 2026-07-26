@@ -2,8 +2,9 @@ from fractions import Fraction
 from typing import Final
 
 import pytest
+from pydantic import ValidationError
 
-from note_extractor.errors import ConfigurationError
+from note_extractor.errors import MidiSourceError
 from note_extractor.midi.events import EventPosition, MeterChange
 from note_extractor.timeline.meter import (
     DEFAULT_SIGNATURE,
@@ -49,6 +50,15 @@ def test_meter_at_reads_the_signature_holding_on_a_tick() -> None:
     assert meter_map.meter_at(3840) == ConstantMeter(ticks_per_beat=TICKS_PER_BEAT, signature=THREE_EIGHTHS)
 
 
+def test_a_meter_stays_comparable_once_its_measure_span_is_read() -> None:
+    """`MeterMap` hands out the same meter repeatedly, so caching the span holds equality."""
+    meter = ConstantMeter(ticks_per_beat=TICKS_PER_BEAT, signature=COMMON_TIME)
+
+    assert meter.measure_ticks == Fraction(1920)
+    assert meter == ConstantMeter(ticks_per_beat=TICKS_PER_BEAT, signature=COMMON_TIME)
+    assert hash(meter) == hash(ConstantMeter(ticks_per_beat=TICKS_PER_BEAT, signature=COMMON_TIME))
+
+
 def test_changes_are_read_from_performance_events() -> None:
     changes = (
         MeterChange(position=EventPosition(tick=0, sequence=0), numerator=4, denominator=4),
@@ -90,5 +100,17 @@ def test_measures_for_ticks_reads_a_span_as_a_share_of_a_measure() -> None:
 
 @pytest.mark.parametrize(("numerator", "denominator"), [(0, 4), (-3, 4), (4, 0), (4, -8)])
 def test_a_signature_outside_the_supported_range_is_rejected(numerator: int, denominator: int) -> None:
-    with pytest.raises(ConfigurationError, match="time signature"):
+    with pytest.raises(ValidationError):
         TimeSignature(numerator=numerator, denominator=denominator)
+
+
+def test_a_non_positive_resolution_is_rejected() -> None:
+    with pytest.raises(ValidationError):
+        ConstantMeter(ticks_per_beat=0, signature=COMMON_TIME)
+
+
+def test_a_malformed_signature_in_a_performance_is_reported_against_its_tick() -> None:
+    changes = (MeterChange(position=EventPosition(tick=1920, sequence=3), numerator=0, denominator=4),)
+
+    with pytest.raises(MidiSourceError, match="invalid time signature 0/4 at tick 1920"):
+        MeterMap.from_changes(TICKS_PER_BEAT, changes)
