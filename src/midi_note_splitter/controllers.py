@@ -22,17 +22,9 @@ class ControllerTimeline:
 
         self.by_control = {key: tuple(value) for key, value in by_control.items()}
         self.by_channel = {key: tuple(value) for key, value in by_channel.items()}
-        self.controls_by_channel = {
-            key: frozenset(value) for key, value in controls_by_channel.items()
-        }
-        self._control_keys = {
-            key: tuple(event.key for event in value)
-            for key, value in self.by_control.items()
-        }
-        self._channel_keys = {
-            key: tuple(event.key for event in value)
-            for key, value in self.by_channel.items()
-        }
+        self.controls_by_channel = {key: frozenset(value) for key, value in controls_by_channel.items()}
+        self._control_keys = {key: tuple(event.key for event in value) for key, value in self.by_control.items()}
+        self._channel_keys = {key: tuple(event.key for event in value) for key, value in self.by_channel.items()}
 
     def value_before(self, channel: int, control: int, key: EventKey, default: int = 0) -> int:
         events = self.by_control.get((channel, control), ())
@@ -55,9 +47,7 @@ class ControllerTimeline:
             keys = self._channel_keys.get(channel, ())
             start = bisect_right(keys, start_key)
             end = bisect_right(keys, end_key)
-            result.extend(
-                event for event in events[start:end] if event.control not in ignored
-            )
+            result.extend(event for event in events[start:end] if event.control not in ignored)
 
         result.sort(key=lambda event: event.key)
         return result

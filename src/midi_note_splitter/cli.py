@@ -14,11 +14,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         numerator, denominator = parse_time_signature(args.time_signature)
         tracked_ccs = _parse_int_set(args.cc, 0, 127, "CC")
-        cc_channels = (
-            None
-            if args.cc_channels is None
-            else _parse_int_set(args.cc_channels, 0, 15, "channel")
-        )
+        cc_channels = None if args.cc_channels is None else _parse_int_set(args.cc_channels, 0, 15, "channel")
         config = SplitConfig(
             tempo_bpm=args.tempo,
             time_signature_numerator=numerator,

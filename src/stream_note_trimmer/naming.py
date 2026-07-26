@@ -10,8 +10,7 @@ def sample_filename(note: ManifestNote, cc_decimals: int, index_width: int) -> s
         f"v{note.velocity:03d}",
     ]
     parts.extend(
-        f"cc{control}-{_format_value(value, cc_decimals)}"
-        for control, value in sorted(note.cc_averages.items())
+        f"cc{control}-{_format_value(value, cc_decimals)}" for control, value in sorted(note.cc_averages.items())
     )
     return "_".join(parts) + ".wav"
 

@@ -26,9 +26,7 @@ def main(argv: list[str] | None = None) -> int:
     except (ValueError, FileExistsError, OSError) as exc:
         parser.error(str(exc))
 
-    clamped = sum(
-        sample.start_clamped or sample.end_clamped for sample in result.samples
-    )
+    clamped = sum(sample.start_clamped or sample.end_clamped for sample in result.samples)
     print(f"wrote {len(result.samples)} samples to {args.output_directory}")
     print(f"sample rate: {result.sample_rate} Hz")
     if clamped:

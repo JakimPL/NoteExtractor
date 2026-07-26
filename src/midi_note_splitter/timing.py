@@ -36,11 +36,7 @@ class TempoMap:
 
     @classmethod
     def from_events(cls, ticks_per_beat: int, events: tuple[TimedMessage, ...]) -> TempoMap:
-        changes = [
-            (event.tick, event.message.tempo)
-            for event in events
-            if event.message.type == "set_tempo"
-        ]
+        changes = [(event.tick, event.message.tempo) for event in events if event.message.type == "set_tempo"]
         return cls(ticks_per_beat, changes)
 
     @classmethod
@@ -94,9 +90,7 @@ class TimeSignatureMap:
                 previous_signature[0],
                 previous_signature[1],
             )
-            points.append(
-                SignaturePoint(tick, signature[0], signature[1], float(measures))
-            )
+            points.append(SignaturePoint(tick, signature[0], signature[1], float(measures)))
             previous_tick = tick
             previous_signature = signature
 
@@ -140,13 +134,16 @@ class TimeSignatureMap:
 
     def ticks_for_measures(self, measures: float) -> int:
         point = self.points[0]
-        ticks = float(
-            _measure_ticks_fraction(
-                self.ticks_per_beat,
-                point.numerator,
-                point.denominator,
+        ticks = (
+            float(
+                _measure_ticks_fraction(
+                    self.ticks_per_beat,
+                    point.numerator,
+                    point.denominator,
+                )
             )
-        ) * measures
+            * measures
+        )
         return round(ticks)
 
 

@@ -16,9 +16,7 @@ def build_manifest(
     output_signature: TimeSignatureMap,
     config: dict[str, object],
 ) -> dict[str, object]:
-    rendered_by_source = {
-        rendered.note.source_id: rendered for rendered in rendered_notes
-    }
+    rendered_by_source = {rendered.note.source_id: rendered for rendered in rendered_notes}
     records = [
         _note_record(
             note,
@@ -75,7 +73,9 @@ def _note_record(
             "release_end_tick": rendered.release_end_tick,
             "onset_measures": output_signature.measures_at(rendered.start_tick),
             "key_duration_measures": output_signature.measures_between(rendered.start_tick, rendered.key_end_tick),
-            "release_duration_measures": output_signature.measures_between(rendered.start_tick, rendered.release_end_tick),
+            "release_duration_measures": output_signature.measures_between(
+                rendered.start_tick, rendered.release_end_tick
+            ),
             "start_seconds": output_tempo.seconds_at(rendered.start_tick),
             "key_end_seconds": output_tempo.seconds_at(rendered.key_end_tick),
             "release_end_seconds": output_tempo.seconds_at(rendered.release_end_tick),

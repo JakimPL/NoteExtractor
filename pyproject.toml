@@ -2,6 +2,7 @@
 name = "midi-note-splitter"
 version = "0.2.0"
 description = "Split MIDI performances into isolated notes and trim rendered WAV streams"
+readme = "README.md"
 requires-python = ">=3.11"
 dependencies = ["mido>=1.3,<2", "scipy>=1.12,<2", "tqdm>=4.69.1"]
 
@@ -16,12 +17,15 @@ dev = [
     "mypy==2.1.0",
     "pre-commit==4.6.0",
     "pylint==4.0.6",
-    "pylint-pydantic==0.4.1",
     "pytest==9.1.1",
     "pytest-cov==7.1.0",
     "pytest-xdist==3.8.0",
+    "scipy-stubs",
+    "types-colorama",
+    "types-pexpect",
+    "types-Pygments",
     "types-PyYAML==6.0.12.20260518",
-    "yamlfmt==1.1.1",
+    "types-tqdm",
 ]
 
 [tool.black]
@@ -31,15 +35,7 @@ target-version = ["py312"]
 [tool.isort]
 profile = "black"
 line_length = 120
-known_first_party = [
-    "sampletones",
-    "sampletones_application",
-    "sampletones_assets",
-    "sampletones_config",
-    "sampletones_core",
-    "sampletones_shared",
-    "sampletones_synthesis",
-]
+known_first_party = ["midi_note_splitter", "stream_note_trimmer"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]

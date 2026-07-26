@@ -7,7 +7,7 @@ from tqdm import tqdm
 
 from .audio import read_wav, write_wav
 from .manifest import load_manifest
-from .models import ManifestNote, TrimConfig, TrimResult, TrimmedSample
+from .models import ManifestNote, TrimConfig, TrimmedSample, TrimResult
 from .naming import index_width, sample_filename
 
 
@@ -22,10 +22,7 @@ def trim_note_stream(
     sample_rate, audio = read_wav(wav_path)
     frame_count = len(audio)
     width = index_width(notes)
-    planned = [
-        _plan_sample(note, output_directory, sample_rate, frame_count, config, width)
-        for note in notes
-    ]
+    planned = [_plan_sample(note, output_directory, sample_rate, frame_count, config, width) for note in notes]
     _validate_outputs(planned, config.overwrite)
 
     output_directory.mkdir(parents=True, exist_ok=True)
@@ -59,9 +56,7 @@ def _plan_sample(
     end_frame = min(frame_count, raw_end_frame)
 
     if start_frame >= frame_count:
-        raise ValueError(
-            f"note {note.render_index} starts after the WAV ends: {note.start_seconds:.6f}s"
-        )
+        raise ValueError(f"note {note.render_index} starts after the WAV ends: {note.start_seconds:.6f}s")
     if end_frame <= start_frame:
         raise ValueError(f"note {note.render_index} produces an empty WAV segment")
 

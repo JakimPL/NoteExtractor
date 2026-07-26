@@ -36,9 +36,7 @@ def extract_notes(parsed: ParsedMidi, sustain_pedal: bool) -> list[Note]:
             active[(message.channel, message.note)].append(note)
             continue
 
-        is_note_off = message.type == "note_off" or (
-            message.type == "note_on" and message.velocity == 0
-        )
+        is_note_off = message.type == "note_off" or (message.type == "note_on" and message.velocity == 0)
         if not is_note_off:
             continue
 
