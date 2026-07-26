@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from collections import defaultdict, deque
 
 from .models import Note, ParsedMidi

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from pathlib import Path
 
 from mido import MidiFile, merge_tracks
@@ -20,7 +18,11 @@ def load_midi(path: Path) -> ParsedMidi:
 
     for sequence, message in enumerate(merge_tracks(midi.tracks)):
         tick += message.time
-        event = TimedMessage(tick=tick, sequence=sequence, message=message.copy(time=0))
+        event = TimedMessage(
+            tick=tick,
+            sequence=sequence,
+            message=message.copy(time=0),
+        )
         events.append(event)
 
         if message.type in {"note_on", "note_off"}:

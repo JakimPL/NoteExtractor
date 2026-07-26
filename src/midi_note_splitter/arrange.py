@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from dataclasses import dataclass
 
 from mido import Message, MetaMessage, MidiFile, MidiTrack, bpm2tempo
@@ -42,7 +40,12 @@ def arrange_notes(
     gap_ticks = time_signatures.ticks_for_measures(config.gap_measures)
     sorted_notes = sorted(
         notes,
-        key=lambda note: (note.pitch, note.velocity, note.start_tick, note.source_id),
+        key=lambda note: (
+            note.pitch,
+            note.velocity,
+            note.start_tick,
+            note.source_id,
+        ),
     )
 
     scheduled: list[ScheduledMessage] = []
@@ -220,7 +223,10 @@ def _to_delta_track(scheduled: list[ScheduledMessage]) -> MidiTrack:
     track.append(MetaMessage("track_name", name="Isolated notes", time=0))
     previous_tick = 0
 
-    for item in sorted(scheduled, key=lambda value: (value.tick, value.order, value.serial)):
+    for item in sorted(
+        scheduled,
+        key=lambda value: (value.tick, value.order, value.serial),
+    ):
         delta = item.tick - previous_tick
         track.append(item.message.copy(time=delta))
         previous_tick = item.tick

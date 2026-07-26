@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import argparse
 from pathlib import Path
 
@@ -31,6 +29,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"sample rate: {result.sample_rate} Hz")
     if clamped:
         print(f"segments clamped to WAV bounds: {clamped}")
+
     return 0
 
 
@@ -50,6 +49,7 @@ def _non_negative_float(value: str) -> float:
     number = float(value)
     if number < 0:
         raise argparse.ArgumentTypeError("value must not be negative")
+
     return number
 
 
@@ -57,4 +57,5 @@ def _cc_decimals(value: str) -> int:
     number = int(value)
     if not 0 <= number <= 9:
         raise argparse.ArgumentTypeError("value must be in 0..9")
+
     return number

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import argparse
 from pathlib import Path
 
@@ -14,7 +12,16 @@ def main(argv: list[str] | None = None) -> int:
     try:
         numerator, denominator = parse_time_signature(args.time_signature)
         tracked_ccs = _parse_int_set(args.cc, 0, 127, "CC")
-        cc_channels = None if args.cc_channels is None else _parse_int_set(args.cc_channels, 0, 15, "channel")
+        cc_channels = (
+            None
+            if args.cc_channels is None
+            else _parse_int_set(
+                args.cc_channels,
+                0,
+                15,
+                "channel",
+            )
+        )
         config = SplitConfig(
             tempo_bpm=args.tempo,
             time_signature_numerator=numerator,
@@ -26,8 +33,8 @@ def main(argv: list[str] | None = None) -> int:
         )
         manifest_path = args.manifest or args.output.with_suffix(".notes.json")
         manifest = split_midi(args.input, args.output, manifest_path, config)
-    except ValueError as exc:
-        parser.error(str(exc))
+    except ValueError as exception:
+        parser.error(str(exception))
 
     print(f"wrote {args.output}")
     print(f"wrote {manifest_path}")
@@ -55,10 +62,13 @@ def _parse_int_set(value: str, minimum: int, maximum: int, label: str) -> set[in
         part = part.strip()
         if not part:
             continue
+
         number = int(part)
         if not minimum <= number <= maximum:
             raise ValueError(f"{label} must be in {minimum}..{maximum}: {number}")
+
         result.add(number)
+
     return result
 
 
@@ -66,6 +76,7 @@ def _positive_float(value: str) -> float:
     number = float(value)
     if number <= 0:
         raise argparse.ArgumentTypeError("value must be positive")
+
     return number
 
 
@@ -73,4 +84,5 @@ def _non_negative_float(value: str) -> float:
     number = float(value)
     if number < 0:
         raise argparse.ArgumentTypeError("value must not be negative")
+
     return number

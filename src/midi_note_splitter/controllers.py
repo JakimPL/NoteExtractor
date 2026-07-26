@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from bisect import bisect_left, bisect_right
 from collections import defaultdict
 
@@ -74,8 +72,15 @@ class ControllerTimeline:
         weighted = 0.0
         cursor_tick = start_tick
         for event in events:
-            weighted += current_value * tempo_map.seconds_between(cursor_tick, event.tick)
+            weighted += current_value * tempo_map.seconds_between(
+                cursor_tick,
+                event.tick,
+            )
             current_value = event.value
             cursor_tick = event.tick
-        weighted += current_value * tempo_map.seconds_between(cursor_tick, end_tick)
+
+        weighted += current_value * tempo_map.seconds_between(
+            cursor_tick,
+            end_tick,
+        )
         return weighted / total_seconds
