@@ -92,7 +92,7 @@ def test_a_channel_that_posted_nothing_contributes_nothing() -> None:
         frozenset(),
     )
 
-    assert found == ()
+    assert not found
 
 
 def test_one_controller_of_a_stretch_is_read_on_its_own() -> None:
@@ -107,12 +107,11 @@ def test_one_controller_of_a_stretch_is_read_on_its_own() -> None:
 
 
 def test_a_controller_posted_nothing_over_a_stretch_reads_as_empty() -> None:
-    assert (
-        TIMELINE.control_events_between(
-            0,
-            SUSTAIN,
-            EventPosition.at_tick_start(0),
-            EventPosition(tick=240, sequence=4),
-        )
-        == ()
+    found = TIMELINE.control_events_between(
+        0,
+        SUSTAIN,
+        EventPosition.at_tick_start(0),
+        EventPosition(tick=240, sequence=4),
     )
+
+    assert not found

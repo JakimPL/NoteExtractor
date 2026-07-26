@@ -1,5 +1,6 @@
 from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
+from types import MappingProxyType
 from typing import Final
 
 import numpy as np
@@ -21,7 +22,7 @@ from note_extractor.trimmer.audio import AudioStream
 
 SAMPLE_RATE: Final = 1000
 TICKS_PER_SECOND: Final = 960
-DEFAULT_CC_AVERAGES: Final = {0: 3.0, 1: 63.875}
+DEFAULT_CC_AVERAGES: Final = MappingProxyType({0: 3.0, 1: 63.875})
 
 WriteManifest = Callable[[Sequence[NoteRecord]], Path]
 WriteRender = Callable[[npt.NDArray[np.int16]], Path]

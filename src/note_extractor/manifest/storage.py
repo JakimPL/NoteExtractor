@@ -15,7 +15,7 @@ def read_manifest(path: Path) -> NoteManifest:
     """Manifest stored at the given path.
 
     Raises:
-        ManifestError: If the file is unreadable, holds text that is not JSON, states another
+        ManifestError: If the file resists reading, holds text that is not JSON, states another
             schema version, or describes a run that falls outside the schema.
     """
     document = _read_document(path)
@@ -43,7 +43,7 @@ def _read_document(path: Path) -> object:
     """JSON document stored at the given path.
 
     Raises:
-        ManifestError: If the file is unreadable or holds text that is not JSON.
+        ManifestError: If the file resists reading or holds text that is not JSON.
     """
     try:
         text = path.read_text(encoding="utf-8")

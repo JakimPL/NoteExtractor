@@ -5,7 +5,7 @@ def describe_validation_problems(error: ValidationError) -> str:
     """First problem a validator reported, followed by a count of the ones after it.
 
     A boundary reporting a failure to a person states the field that carries it and what it takes,
-    which is enough to correct the value that was given without reading the whole report.
+    which is what the person needs to correct the value they gave.
     """
     problems = error.errors()
     first = problems[0]

@@ -131,7 +131,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--sustain-pedal",
         action=argparse.BooleanOptionalAction,
         default=DEFAULT_SUSTAIN_PEDAL,
-        help="hold each note as long as the pedal did, rather than to its key release",
+        help="hold each note as long as the sustain pedal held it",
     )
     return parser
 

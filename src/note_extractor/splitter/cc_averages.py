@@ -23,9 +23,9 @@ def time_weighted_average(
 ) -> float:
     """Average value one controller held while a note sounded, weighted by seconds.
 
-    Weighting by seconds rather than by ticks keeps the average faithful across a tempo change, so a
-    value held over a slow stretch counts for the time it was actually heard. A note whose stretch
-    takes no time reads as the value holding at its onset.
+    Each value counts for the seconds it was heard over, so a value held across a slow stretch
+    carries the weight that stretch takes in time. A note whose stretch takes no time reads as the
+    value holding at its onset.
     """
     total_seconds = tempo.seconds_between(note.start.tick, note.release_end.tick)
     value = controllers.value_before(note.channel, control, note.start)

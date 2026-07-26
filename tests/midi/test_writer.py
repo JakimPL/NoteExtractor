@@ -104,7 +104,7 @@ def test_missing_parent_directories_are_created(tmp_path: Path) -> None:
 
 
 def test_a_path_that_resists_writing_is_reported_against_itself(tmp_path: Path) -> None:
-    """A render named under an existing file reports the path rather than the reader's own words."""
+    """A render named under an existing file reports the path it failed to write."""
     occupied = tmp_path / "occupied"
     occupied.write_text("already a file", encoding="utf-8")
     path = occupied / "render.mid"

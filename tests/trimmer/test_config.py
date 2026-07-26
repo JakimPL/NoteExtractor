@@ -42,7 +42,7 @@ def test_a_setting_outside_its_supported_range_is_rejected(field: str, value: An
 
 
 def test_an_unknown_setting_is_rejected() -> None:
-    """A caller stating the milliseconds the command line takes is told, rather than left at zero."""
+    """A caller stating the milliseconds the command line takes is told the field the model declares."""
     with pytest.raises(ValidationError):
         TrimConfig.model_validate({"post_roll_ms": 250.0})
 

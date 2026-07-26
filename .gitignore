@@ -1,5 +1,6 @@
 __pycache__/
 .claude/
+.coverage
 .github/
 .idea/
 .ipynb_checkpoints/

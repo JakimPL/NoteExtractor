@@ -37,8 +37,8 @@ def trim_note_stream(
     the note sounds over widened by the rolls the run asks for.
 
     Raises:
-        ManifestError: If the manifest is unreadable or falls outside the schema.
-        AudioError: If the stream is unreadable, or ends before a note the manifest places.
+        ManifestError: If the manifest resists reading or falls outside the schema.
+        AudioError: If the stream resists reading, or ends before a note the manifest places.
         OutputConflictError: If two notes claim one file, or a file an earlier run wrote is kept.
     """
     notes = read_manifest(manifest_path).notes_in_render_order()

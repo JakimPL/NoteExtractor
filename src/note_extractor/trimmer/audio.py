@@ -28,7 +28,7 @@ class AudioStream:
         """Confirm the stream states a rate that places its frames in time.
 
         Raises:
-            AudioError: If the sample rate is not positive.
+            AudioError: If the sample rate states zero or fewer frames per second.
         """
         if self.sample_rate <= 0:
             raise AudioError(f"a sample rate of {self.sample_rate} frames per second places no timing")
@@ -52,8 +52,8 @@ def read_wav(path: Path) -> AudioStream:
     """Audio stored at the given path.
 
     Raises:
-        AudioError: If the file is unreadable, carries bytes the reader fails to parse, or states a
-            sample rate that places no timing.
+        AudioError: If the file resists reading, carries bytes the reader fails to parse, or states
+            a sample rate that places no timing.
     """
     try:
         sample_rate, samples = _read_frames(path)
@@ -78,7 +78,7 @@ def _read_frames(path: Path) -> tuple[int, AudioSamples]:
     """Sample rate and frames of one WAV file, mapped from the file where its layout allows.
 
     Mapping leaves the frames on disk until a cut reads them, which keeps a long render out of
-    memory. A file laid out for reading in one pass is read that way instead.
+    memory. A file whose layout resists mapping is read in one pass.
     """
     try:
         return wavfile.read(path, mmap=True)

@@ -60,7 +60,7 @@ def test_manifest_note_records_match_golden(golden_run: GoldenRun) -> None:
 
 
 def test_manifest_run_metadata_matches_golden(golden_run: GoldenRun) -> None:
-    """Top-level manifest metadata describes the run rather than any individual note."""
+    """Top-level manifest metadata describes the run as a whole, which the note records sit under."""
     expected = _load_or_update("expected_run.json", golden_run.run_metadata)
     assert golden_run.run_metadata == expected
 
@@ -148,7 +148,7 @@ def _write_source_midi(path: Path) -> None:
     """Build a performance covering sustain, mid-note controllers, tempo and meter changes.
 
     The material deliberately includes overlapping notes, a repeated pitch and velocity pair,
-    a `note_on` with zero velocity used as a release, and a note left without any release.
+    a `note_on` with zero velocity used as a release, and a key still down where the stream ends.
     """
     midi = MidiFile(type=1, ticks_per_beat=TICKS_PER_BEAT)
     midi.tracks.append(_build_track("Timing", _timing_events()))
