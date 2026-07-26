@@ -2,8 +2,10 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Final
 
+import pytest
 from mido import MidiFile
 
+from note_extractor.errors import RenderError
 from note_extractor.midi.events import (
     ControlChange,
     EventPosition,
@@ -99,6 +101,16 @@ def test_missing_parent_directories_are_created(tmp_path: Path) -> None:
     write_midi(path, _score(EVENTS))
 
     assert path.exists()
+
+
+def test_a_path_that_resists_writing_is_reported_against_itself(tmp_path: Path) -> None:
+    """A render named under an existing file reports the path rather than the reader's own words."""
+    occupied = tmp_path / "occupied"
+    occupied.write_text("already a file", encoding="utf-8")
+    path = occupied / "render.mid"
+
+    with pytest.raises(RenderError, match=f"cannot write MIDI {path}"):
+        write_midi(path, _score(EVENTS))
 
 
 def _score(events: tuple[PerformanceEvent, ...]) -> RenderScore:

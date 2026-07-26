@@ -11,6 +11,14 @@ class MidiSourceError(NoteExtractorError):
     """
 
 
+class RenderError(NoteExtractorError):
+    """Reports a render the pipeline fails to write.
+
+    The path may lie under a directory the run may not create, or name a file the filesystem keeps
+    as it stands.
+    """
+
+
 class AudioError(NoteExtractorError):
     """Reports rendered audio the trimmer declines to cut.
 

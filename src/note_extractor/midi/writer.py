@@ -4,6 +4,7 @@ from typing import Final, assert_never
 
 from mido import Message, MetaMessage, MidiFile, MidiTrack
 
+from ..errors import RenderError
 from .events import ControlChange, NoteOff, NoteOn, PerformanceEvent
 from .score import RenderScore
 
@@ -16,13 +17,19 @@ MIDI_FILE_TYPE: Final = 1
 def write_midi(path: Path, score: RenderScore) -> None:
     """Write a score as a MIDI file with one timing track and one performance track.
 
-    Missing parent directories of `path` are created.
+    The directories leading up to `path` are created.
+
+    Raises:
+        RenderError: If the directories or the file resist creation.
     """
     midi = MidiFile(type=MIDI_FILE_TYPE, ticks_per_beat=score.ticks_per_beat)
     midi.tracks.append(_timing_track(score))
     midi.tracks.append(_performance_track(score.events))
-    path.parent.mkdir(parents=True, exist_ok=True)
-    midi.save(path)
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        midi.save(path)
+    except OSError as error:
+        raise RenderError(f"cannot write MIDI {path}: {error}") from error
 
 
 def _timing_track(score: RenderScore) -> MidiTrack:

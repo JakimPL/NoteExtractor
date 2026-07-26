@@ -30,6 +30,7 @@ def split_midi(
 
     Raises:
         MidiSourceError: If the source resists parsing or states timing the reader leaves unsupported.
+        RenderError: If the render resists writing.
         ManifestError: If the manifest resists writing.
     """
     source = read_midi(input_path)

@@ -1,21 +1,25 @@
 {
-  "config": {
+  "render": {
+    "gap_measures": 0.25,
+    "path": "render.mid",
+    "tempo_bpm": 115.0,
+    "time_signature": "4/4"
+  },
+  "schema_version": 1,
+  "settings": {
     "cc_channels": [
       0,
       1
     ],
-    "gap_measures": 0.25,
-    "input": "source.mid",
-    "note_count": 7,
-    "output": "render.mid",
     "sustain_pedal": true,
-    "tempo_bpm": 115.0,
-    "ticks_per_beat": 480,
-    "time_signature": "4/4",
     "tracked_ccs": [
       0,
       1,
       64
     ]
+  },
+  "source": {
+    "path": "source.mid",
+    "ticks_per_beat": 480
   }
 }

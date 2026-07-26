@@ -5,6 +5,7 @@ from typing import Final
 from pydantic import ValidationError
 
 from ..errors import ManifestError
+from ..validation import describe_validation_problems
 from .models import SCHEMA_VERSION, NoteManifest
 
 MANIFEST_INDENT: Final = 2
@@ -64,16 +65,4 @@ def _schema_failure(path: Path, document: object, error: ValidationError) -> Man
     if version != SCHEMA_VERSION:
         return ManifestError(f"manifest {path} states schema version {version!r}, expected {SCHEMA_VERSION}")
 
-    return ManifestError(f"manifest {path} violates the schema: {_problem_summary(error)}")
-
-
-def _problem_summary(error: ValidationError) -> str:
-    """First problem the validator reported, followed by a count of the ones after it."""
-    problems = error.errors()
-    first = problems[0]
-    location = ".".join(str(part) for part in first["loc"])
-    summary = f"{location}: {first['msg']}" if location else first["msg"]
-    if len(problems) > 1:
-        return f"{summary} (and {len(problems) - 1} more)"
-
-    return summary
+    return ManifestError(f"manifest {path} violates the schema: {describe_validation_problems(error)}")

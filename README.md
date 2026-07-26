@@ -1,9 +1,9 @@
 # MIDI note rendering toolkit
 
-This repository contains two Python packages:
+The `note_extractor` package provides two commands:
 
-- `midi_note_splitter` reads one MIDI performance, extracts sustain-aware notes, sorts them by pitch and velocity, and writes a sequential render MIDI plus a JSON timing manifest.
-- `stream_note_trimmer` uses that manifest to split the rendered WAV stream into one WAV file per note.
+- `midi-note-splitter` reads one MIDI performance, extracts sustain-aware notes, sorts them by pitch and velocity, and writes a sequential render MIDI plus a JSON timing manifest.
+- `stream-note-trimmer` uses that manifest to split the rendered WAV stream into one WAV file per note.
 
 ## Install
 
@@ -73,7 +73,7 @@ Pre-roll and post-roll are clamped to the WAV boundaries. The WAV sample rate, c
 ```python
 from pathlib import Path
 
-from stream_note_trimmer import TrimConfig, trim_note_stream
+from note_extractor.trimmer import TrimConfig, trim_note_stream
 
 result = trim_note_stream(
     Path("isolated.wav"),

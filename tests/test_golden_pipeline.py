@@ -14,8 +14,9 @@ import pytest
 from mido import Message, MetaMessage, MidiFile, MidiTrack
 from scipy.io import wavfile
 
-from midi_note_splitter.pipeline import SplitConfig, split_midi
-from stream_note_trimmer import TrimConfig, trim_note_stream
+from note_extractor.splitter import SplitConfig, split_midi
+from note_extractor.timeline.meter import TimeSignature
+from note_extractor.trimmer import TrimConfig, trim_note_stream
 
 GOLDEN_DIRECTORY: Final = Path(__file__).parent / "golden"
 UPDATE_VARIABLE: Final = "UPDATE_GOLDEN"
@@ -29,8 +30,7 @@ RAMP_OFFSET: Final = 4_096
 
 SPLIT_CONFIG: Final = SplitConfig(
     tempo_bpm=115.0,
-    time_signature_numerator=4,
-    time_signature_denominator=4,
+    signature=TimeSignature(numerator=4, denominator=4),
     tracked_ccs=frozenset({0, 1, 64}),
     cc_channels=None,
     gap_measures=0.25,
