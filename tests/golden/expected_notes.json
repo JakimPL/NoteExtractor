@@ -1,0 +1,254 @@
+[
+  {
+    "cc_averages": {
+      "0": 0.0,
+      "1": 70.0,
+      "64": 0.0
+    },
+    "channel": 1,
+    "pitch": 48,
+    "pitch_name": "C3",
+    "release_velocity": 0,
+    "render": {
+      "index": 0,
+      "key_duration_measures": 0.5,
+      "key_end_seconds": 1.043478,
+      "key_end_tick": 960,
+      "onset_measures": 0.0,
+      "release_duration_measures": 0.5,
+      "release_end_seconds": 1.043478,
+      "release_end_tick": 960,
+      "start_seconds": 0.0,
+      "start_tick": 0
+    },
+    "source": {
+      "key_duration_measures": 0.5,
+      "key_end_seconds": 1.0,
+      "key_end_tick": 960,
+      "onset_measures": 0.0,
+      "release_duration_measures": 0.5,
+      "release_end_seconds": 1.0,
+      "release_end_tick": 960,
+      "start_seconds": 0.0,
+      "start_tick": 0
+    },
+    "source_id": 2,
+    "velocity": 60
+  },
+  {
+    "cc_averages": {
+      "0": 0.0,
+      "1": 70.0,
+      "64": 0.0
+    },
+    "channel": 1,
+    "pitch": 50,
+    "pitch_name": "D3",
+    "release_velocity": 0,
+    "render": {
+      "index": 1,
+      "key_duration_measures": 0.25,
+      "key_end_seconds": 2.086956,
+      "key_end_tick": 1920,
+      "onset_measures": 0.75,
+      "release_duration_measures": 0.25,
+      "release_end_seconds": 2.086956,
+      "release_end_tick": 1920,
+      "start_seconds": 1.565217,
+      "start_tick": 1440
+    },
+    "source": {
+      "key_duration_measures": 0.25,
+      "key_end_seconds": 2.0,
+      "key_end_tick": 1920,
+      "onset_measures": 0.75,
+      "release_duration_measures": 0.25,
+      "release_end_seconds": 2.0,
+      "release_end_tick": 1920,
+      "start_seconds": 1.5,
+      "start_tick": 1440
+    },
+    "source_id": 3,
+    "velocity": 70
+  },
+  {
+    "cc_averages": {
+      "0": 64.0,
+      "1": 90.0,
+      "64": 0.0
+    },
+    "channel": 0,
+    "pitch": 55,
+    "pitch_name": "G3",
+    "release_velocity": 0,
+    "render": {
+      "index": 2,
+      "key_duration_measures": 0.25,
+      "key_end_seconds": 3.130434,
+      "key_end_tick": 2880,
+      "onset_measures": 1.25,
+      "release_duration_measures": 0.25,
+      "release_end_seconds": 3.130434,
+      "release_end_tick": 2880,
+      "start_seconds": 2.608695,
+      "start_tick": 2400
+    },
+    "source": {
+      "key_duration_measures": 0.3333333333333335,
+      "key_end_seconds": 4.0,
+      "key_end_tick": 4320,
+      "onset_measures": 2.0,
+      "release_duration_measures": 0.3333333333333335,
+      "release_end_seconds": 4.0,
+      "release_end_tick": 4320,
+      "start_seconds": 3.6,
+      "start_tick": 3840
+    },
+    "source_id": 6,
+    "velocity": 127
+  },
+  {
+    "cc_averages": {
+      "0": 10.0,
+      "1": 45.0,
+      "64": 84.66666666666667
+    },
+    "channel": 0,
+    "pitch": 60,
+    "pitch_name": "C4",
+    "release_velocity": 20,
+    "render": {
+      "index": 3,
+      "key_duration_measures": 0.5,
+      "key_end_seconds": 4.695651,
+      "key_end_tick": 4320,
+      "onset_measures": 1.75,
+      "release_duration_measures": 0.75,
+      "release_end_seconds": 5.21739,
+      "release_end_tick": 4800,
+      "start_seconds": 3.652173,
+      "start_tick": 3360
+    },
+    "source": {
+      "key_duration_measures": 0.5,
+      "key_end_seconds": 1.0,
+      "key_end_tick": 960,
+      "onset_measures": 0.0,
+      "release_duration_measures": 0.75,
+      "release_end_seconds": 1.5,
+      "release_end_tick": 1440,
+      "start_seconds": 0.0,
+      "start_tick": 0
+    },
+    "source_id": 0,
+    "velocity": 100
+  },
+  {
+    "cc_averages": {
+      "0": 10.0,
+      "1": 90.0,
+      "64": 0.0
+    },
+    "channel": 0,
+    "pitch": 60,
+    "pitch_name": "C4",
+    "release_velocity": 30,
+    "render": {
+      "index": 4,
+      "key_duration_measures": 0.25,
+      "key_end_seconds": 6.260868,
+      "key_end_tick": 5760,
+      "onset_measures": 2.75,
+      "release_duration_measures": 0.25,
+      "release_end_seconds": 6.260868,
+      "release_end_tick": 5760,
+      "start_seconds": 5.739129,
+      "start_tick": 5280
+    },
+    "source": {
+      "key_duration_measures": 0.25,
+      "key_end_seconds": 2.4,
+      "key_end_tick": 2400,
+      "onset_measures": 1.0,
+      "release_duration_measures": 0.25,
+      "release_end_seconds": 2.4,
+      "release_end_tick": 2400,
+      "start_seconds": 2.0,
+      "start_tick": 1920
+    },
+    "source_id": 4,
+    "velocity": 100
+  },
+  {
+    "cc_averages": {
+      "0": 10.0,
+      "1": 45.0,
+      "64": 84.66666666666667
+    },
+    "channel": 0,
+    "pitch": 64,
+    "pitch_name": "E4",
+    "release_velocity": 10,
+    "render": {
+      "index": 5,
+      "key_duration_measures": 0.375,
+      "key_end_seconds": 7.5652155,
+      "key_end_tick": 6960,
+      "onset_measures": 3.25,
+      "release_duration_measures": 0.75,
+      "release_end_seconds": 8.347824,
+      "release_end_tick": 7680,
+      "start_seconds": 6.782607,
+      "start_tick": 6240
+    },
+    "source": {
+      "key_duration_measures": 0.375,
+      "key_end_seconds": 0.75,
+      "key_end_tick": 720,
+      "onset_measures": 0.0,
+      "release_duration_measures": 0.75,
+      "release_end_seconds": 1.5,
+      "release_end_tick": 1440,
+      "start_seconds": 0.0,
+      "start_tick": 0
+    },
+    "source_id": 1,
+    "velocity": 90
+  },
+  {
+    "cc_averages": {
+      "0": 64.0,
+      "1": 89.99999999999999,
+      "64": 0.0
+    },
+    "channel": 0,
+    "pitch": 72,
+    "pitch_name": "C5",
+    "release_velocity": 50,
+    "render": {
+      "index": 6,
+      "key_duration_measures": 0.25,
+      "key_end_seconds": 9.391302,
+      "key_end_tick": 8640,
+      "onset_measures": 4.25,
+      "release_duration_measures": 0.25,
+      "release_end_seconds": 9.391302,
+      "release_end_tick": 8640,
+      "start_seconds": 8.869563,
+      "start_tick": 8160
+    },
+    "source": {
+      "key_duration_measures": 0.25,
+      "key_end_seconds": 3.2,
+      "key_end_tick": 3360,
+      "onset_measures": 1.5,
+      "release_duration_measures": 0.25,
+      "release_end_seconds": 3.2,
+      "release_end_tick": 3360,
+      "start_seconds": 2.8,
+      "start_tick": 2880
+    },
+    "source_id": 5,
+    "velocity": 40
+  }
+]

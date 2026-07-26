@@ -8,17 +8,18 @@ This repository contains two Python packages:
 ## Install
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -e .
+uv sync
 ```
 
 For development:
 
 ```bash
-pip install -e '.[dev]'
-pytest
+uv sync --group dev
+make check
 ```
+
+`make check` runs `pylint`, `mypy`, and `pytest`. Individual targets are `lint`, `typecheck`,
+`test`, `coverage`, and `format`.
 
 ## Create the isolated-note MIDI
 
