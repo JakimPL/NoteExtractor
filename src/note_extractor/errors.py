@@ -11,6 +11,14 @@ class MidiSourceError(NoteExtractorError):
     """
 
 
+class AudioError(NoteExtractorError):
+    """Reports rendered audio the trimmer declines to cut.
+
+    The file may carry bytes the reader fails to parse, state a sample rate that places no timing,
+    or run out before the notes the manifest describes.
+    """
+
+
 class ManifestError(NoteExtractorError):
     """Reports a note manifest that fails to load or that violates the schema."""
 
@@ -20,4 +28,8 @@ class ConfigurationError(NoteExtractorError):
 
 
 class OutputConflictError(NoteExtractorError):
-    """Reports an existing output file that the current settings preserve."""
+    """Reports an output file a run declines to write.
+
+    The path may hold a file an earlier run left there, or it may be claimed by more than one of the
+    notes the current run carries.
+    """
