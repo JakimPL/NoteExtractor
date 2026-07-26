@@ -42,16 +42,17 @@ line_length = 120
 known_first_party = ["midi_note_splitter", "stream_note_trimmer"]
 
 [tool.mypy]
+mypy_path = ["src", "."]
 python_version = "3.12"
 strict = true
 files = ["src", "tests"]
+explicit_package_bases = true
 plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
 module = ["mido.*"]
 ignore_missing_imports = true
 
-# The legacy packages are replaced package-by-package during the refactor and deleted at cutover.
 [[tool.mypy.overrides]]
 module = ["midi_note_splitter.*", "stream_note_trimmer.*"]
 ignore_errors = true

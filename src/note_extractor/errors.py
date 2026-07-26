@@ -5,8 +5,9 @@ class NoteExtractorError(Exception):
 class MidiSourceError(NoteExtractorError):
     """Reports a MIDI source the pipeline declines to use.
 
-    The source may carry bytes the reader fails to parse, timing the reader leaves unsupported, or
-    values outside the ranges the timeline accepts.
+    The source may carry bytes the reader fails to parse, timing the reader leaves unsupported,
+    values outside the ranges the timeline accepts, or a note the render has no stretch to sound
+    over.
     """
 
 

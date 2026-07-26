@@ -9,6 +9,7 @@ MAX_DATA_BYTE: Final = 127
 
 SUSTAIN_PEDAL_CONTROL: Final = 64
 PEDAL_DOWN_THRESHOLD: Final = 64
+PEDAL_UP_VALUE: Final = 0
 
 MidiChannel = Annotated[int, Field(ge=MIN_CHANNEL, le=MAX_CHANNEL)]
 DataByte = Annotated[int, Field(ge=MIN_DATA_BYTE, le=MAX_DATA_BYTE)]

@@ -39,6 +39,11 @@ class RenderTiming(NoteTiming):
 
     index: int = Field(ge=0)
 
+    @classmethod
+    def at_index(cls, index: int, timing: NoteTiming) -> Self:
+        """The given span of a render, placed under the index it was laid out at."""
+        return cls.model_validate({"index": index, **timing.model_dump()})
+
     @model_validator(mode="after")
     def _require_a_positive_span(self) -> Self:
         if self.release_end_seconds <= self.start_seconds:

@@ -20,6 +20,10 @@ class TimeSignature(FrozenModel):
     numerator: int = Field(gt=0)
     denominator: int = Field(gt=0)
 
+    def __str__(self) -> str:
+        """Signature as a performer writes it, with the count over the note value."""
+        return f"{self.numerator}/{self.denominator}"
+
 
 DEFAULT_SIGNATURE: Final = TimeSignature(numerator=4, denominator=4)
 
