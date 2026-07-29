@@ -72,6 +72,7 @@ class ManifestBuilder:
                 tracked_ccs=tuple(sorted(self._settings.tracked_ccs)),
                 cc_channels=tuple(sorted(self._settings.cc_channels)),
                 sustain_pedal=self._settings.sustain_pedal,
+                rolls=self._settings.rolls,
             ),
             source=SourceInfo(path=source_path, ticks_per_beat=self._settings.ticks_per_beat),
             render=RenderInfo(

@@ -1,5 +1,17 @@
 from pydantic import ValidationError
 
+from .errors import ConfigurationError
+
+
+def configuration_failure(error: ValidationError) -> ConfigurationError:
+    """Failure naming the setting a run states outside the range it supports.
+
+    Settings arrive as a document holding whatever was written in it, so the models are what judge
+    each value, and this states the first one they turned away in the terms the person who wrote it
+    reads.
+    """
+    return ConfigurationError(f"invalid settings: {describe_validation_problems(error)}")
+
 
 def describe_validation_problems(error: ValidationError) -> str:
     """First problem a validator reported, followed by a count of the ones after it.

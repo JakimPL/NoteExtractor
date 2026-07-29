@@ -7,10 +7,11 @@ import pytest
 from mido import Message, MetaMessage, MidiFile, MidiTrack
 
 from note_extractor.errors import MidiSourceError
-from note_extractor.manifest.models import NoteManifest
+from note_extractor.manifest.models import SCHEMA_VERSION, NoteManifest
 from note_extractor.manifest.storage import read_manifest
-from note_extractor.splitter.config import SplitConfig
 from note_extractor.splitter.pipeline import split_midi
+
+from .conftest import split_config
 
 TICKS_PER_BEAT: Final = 480
 SUSTAIN: Final = 64
@@ -20,11 +21,11 @@ def test_a_run_writes_a_render_and_the_manifest_timing_it(tmp_path: Path) -> Non
     paths = _paths(tmp_path)
     _write(paths.source, _performance())
 
-    manifest = split_midi(paths.source, paths.render, paths.manifest, SplitConfig(tempo_bpm=115.0))
+    manifest = split_midi(paths.source, paths.render, paths.manifest, split_config(tempo_bpm=115.0))
 
     assert paths.render.exists()
     assert read_manifest(paths.manifest) == manifest
-    assert manifest.schema_version == 1
+    assert manifest.schema_version == SCHEMA_VERSION
     assert manifest.source.path == paths.source
     assert manifest.render.path == paths.render
     assert manifest.source.ticks_per_beat == TICKS_PER_BEAT
@@ -34,7 +35,7 @@ def test_the_notes_of_a_render_are_grouped_by_pitch_and_strike(tmp_path: Path) -
     paths = _paths(tmp_path)
     _write(paths.source, _performance())
 
-    manifest = split_midi(paths.source, paths.render, paths.manifest, SplitConfig())
+    manifest = split_midi(paths.source, paths.render, paths.manifest, split_config())
 
     assert [note.pitch for note in manifest.notes] == [60, 67]
     assert [note.render.index for note in manifest.notes] == [0, 1]
@@ -44,7 +45,7 @@ def test_a_note_held_by_the_pedal_sounds_past_its_key_release(tmp_path: Path) ->
     paths = _paths(tmp_path)
     _write(paths.source, _performance())
 
-    manifest = split_midi(paths.source, paths.render, paths.manifest, SplitConfig(sustain_pedal=True))
+    manifest = split_midi(paths.source, paths.render, paths.manifest, split_config(sustain_pedal=True))
 
     middle_c = next(note for note in manifest.notes if note.pitch == 60)
     assert middle_c.source.key_end_tick == 480
@@ -55,7 +56,7 @@ def test_a_run_leaving_the_pedal_alone_ends_each_note_at_its_key_release(tmp_pat
     paths = _paths(tmp_path)
     _write(paths.source, _performance())
 
-    manifest = split_midi(paths.source, paths.render, paths.manifest, SplitConfig(sustain_pedal=False))
+    manifest = split_midi(paths.source, paths.render, paths.manifest, split_config(sustain_pedal=False))
 
     middle_c = next(note for note in manifest.notes if note.pitch == 60)
     assert middle_c.source.release_end_tick == 480
@@ -69,7 +70,7 @@ def test_a_tracked_controller_is_averaged_over_the_stretch_its_note_sounded(tmp_
         paths.source,
         paths.render,
         paths.manifest,
-        SplitConfig(tracked_ccs=frozenset({0, 1})),
+        split_config(tracked_ccs=frozenset({0, 1})),
     )
 
     middle_c = next(note for note in manifest.notes if note.pitch == 60)
@@ -89,7 +90,7 @@ def test_a_controller_on_the_onset_tick_keeps_its_place_around_the_key_press(tmp
         ],
     )
 
-    split_midi(paths.source, paths.render, paths.manifest, SplitConfig())
+    split_midi(paths.source, paths.render, paths.manifest, split_config())
 
     voiced = _voiced_at_tick(paths.render, tick=0)
     assert voiced.index(("control_change", 7)) < voiced.index(("note_on", None))
@@ -109,7 +110,7 @@ def test_a_gap_rounding_down_to_nothing_still_keeps_a_pedal_release_out_of_the_n
         paths.source,
         paths.render,
         paths.manifest,
-        SplitConfig(tracked_ccs=frozenset({SUSTAIN}), gap_measures=0.0),
+        split_config(tracked_ccs=frozenset({SUSTAIN}), gap_measures=0.0),
     )
 
     assert [note.render.start_tick for note in manifest.notes] == [0, 481]
@@ -131,7 +132,7 @@ def test_a_note_let_go_of_where_it_starts_is_reported_before_anything_is_written
     )
 
     with pytest.raises(MidiSourceError, match="sounds over no ticks"):
-        split_midi(paths.source, paths.render, paths.manifest, SplitConfig())
+        split_midi(paths.source, paths.render, paths.manifest, split_config())
 
     assert not paths.render.exists()
     assert not paths.manifest.exists()
@@ -141,7 +142,7 @@ def test_a_manifest_holds_the_indented_json_a_reader_expects(tmp_path: Path) -> 
     paths = _paths(tmp_path)
     _write(paths.source, _performance())
 
-    split_midi(paths.source, paths.render, paths.manifest, SplitConfig())
+    split_midi(paths.source, paths.render, paths.manifest, split_config())
 
     document = json.loads(paths.manifest.read_text(encoding="utf-8"))
     assert set(document) == {"schema_version", "settings", "source", "render", "notes"}
@@ -160,7 +161,7 @@ def test_a_run_naming_no_channels_copies_the_channels_carrying_notes(tmp_path: P
         ],
     )
 
-    manifest = split_midi(paths.source, paths.render, paths.manifest, SplitConfig())
+    manifest = split_midi(paths.source, paths.render, paths.manifest, split_config())
 
     assert manifest.settings.cc_channels == (0, 2)
 

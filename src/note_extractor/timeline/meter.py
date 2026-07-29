@@ -12,6 +12,7 @@ from ..models import FrozenModel
 from .piecewise import PiecewiseTimeline, Segment
 
 BEATS_PER_WHOLE_NOTE: Final = 4
+SIGNATURE_SEPARATOR: Final = "/"
 
 
 class TimeSignature(FrozenModel):
@@ -20,9 +21,28 @@ class TimeSignature(FrozenModel):
     numerator: int = Field(gt=0)
     denominator: int = Field(gt=0)
 
+    @classmethod
+    def parse(cls, text: str) -> Self:
+        """Signature one document writes as a count over a note value, such as `4/4`.
+
+        The written form and `__str__` are the two directions of one spelling, held together so a
+        signature read from a file comes back out of the manifest the way it was given.
+
+        Raises:
+            ValueError: If the text holds anything other than two whole numbers around a slash.
+            ValidationError: If the count or the note value falls below one.
+        """
+        numerator_text, _, denominator_text = text.partition(SIGNATURE_SEPARATOR)
+        try:
+            numerator, denominator = int(numerator_text), int(denominator_text)
+        except ValueError as error:
+            raise ValueError(f"time signature must look like 4/4: {text!r}") from error
+
+        return cls(numerator=numerator, denominator=denominator)
+
     def __str__(self) -> str:
         """Signature as a performer writes it, with the count over the note value."""
-        return f"{self.numerator}/{self.denominator}"
+        return f"{self.numerator}{SIGNATURE_SEPARATOR}{self.denominator}"
 
 
 DEFAULT_SIGNATURE: Final = TimeSignature(numerator=4, denominator=4)

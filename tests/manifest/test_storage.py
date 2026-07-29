@@ -22,7 +22,7 @@ def test_a_written_manifest_is_indented_json(tmp_path: Path, manifest: NoteManif
 
     write_manifest(path, manifest)
 
-    assert path.read_text(encoding="utf-8").startswith('{\n  "schema_version": 1,')
+    assert path.read_text(encoding="utf-8").startswith('{\n  "schema_version": 2,')
 
 
 def test_a_missing_manifest_is_reported(tmp_path: Path) -> None:
@@ -45,10 +45,20 @@ def test_a_document_that_is_not_an_object_is_reported(tmp_path: Path) -> None:
 
 
 def test_another_schema_version_is_reported(tmp_path: Path, document: dict[str, Any]) -> None:
-    document["schema_version"] = 2
+    document["schema_version"] = 3
     path = _stored(tmp_path, json.dumps(document))
 
-    with pytest.raises(ManifestError, match="states schema version 2, expected 1"):
+    with pytest.raises(ManifestError, match="states schema version 3, expected 2"):
+        read_manifest(path)
+
+
+def test_a_manifest_written_before_the_rolls_were_carried_is_reported(tmp_path: Path, document: dict[str, Any]) -> None:
+    """Version 1 stated the settings without the rolls, so such a manifest is re-split to gain them."""
+    del document["settings"]["rolls"]
+    document["schema_version"] = 1
+    path = _stored(tmp_path, json.dumps(document))
+
+    with pytest.raises(ManifestError, match="states schema version 1, expected 2"):
         read_manifest(path)
 
 
@@ -56,7 +66,7 @@ def test_a_manifest_written_before_the_schema_was_versioned_is_reported(tmp_path
     """Releases up to now wrote a `config` block and no version, which points at the upgrade."""
     path = _stored(tmp_path, json.dumps({"config": {"note_count": 0}, "notes": []}))
 
-    with pytest.raises(ManifestError, match="states schema version None, expected 1"):
+    with pytest.raises(ManifestError, match="states schema version None, expected 2"):
         read_manifest(path)
 
 

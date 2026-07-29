@@ -7,7 +7,7 @@ from note_extractor.cli.reporting import FAILURE_EXIT_CODE, SUCCESS_EXIT_CODE
 from note_extractor.cli.splitter import PROGRAM_NAME, main
 from note_extractor.manifest.storage import read_manifest
 
-from .conftest import WritePerformance
+from .conftest import WriteConfig, WritePerformance
 
 USAGE_EXIT_CODE: Final = 2
 
@@ -42,29 +42,23 @@ def test_a_run_writes_the_manifest_where_it_was_asked_to(
     assert manifest_path.exists()
 
 
-def test_the_settings_a_run_states_reach_the_manifest(
+def test_the_settings_a_document_states_reach_the_manifest(
     tmp_path: Path,
     write_performance: WritePerformance,
+    write_config: WriteConfig,
 ) -> None:
     source = write_performance()
-    render = tmp_path / "render.mid"
-
-    main(
-        [
-            str(source),
-            str(render),
-            "--tempo",
-            "115",
-            "--time-signature",
-            "3/4",
-            "--cc",
-            "0,1,64",
-            "--cc-channels",
-            "0",
-            "--gap-measures",
-            "0.5",
-        ]
+    config = write_config(
+        split={
+            "tempo_bpm": 115.0,
+            "signature": "3/4",
+            "tracked_ccs": [0, 1, 64],
+            "cc_channels": [0],
+            "gap_measures": 0.5,
+        }
     )
+
+    main([str(source), str(tmp_path / "render.mid"), "--config", str(config)])
 
     manifest = read_manifest(tmp_path / "render.notes.json")
     assert manifest.render.tempo_bpm == 115.0
@@ -74,28 +68,34 @@ def test_the_settings_a_run_states_reach_the_manifest(
     assert manifest.settings.cc_channels == (0,)
 
 
-def test_a_run_following_the_pedal_holds_each_note_as_long_as_it_did(
+def test_the_rolls_a_document_states_are_recorded_for_the_trimmer(
     tmp_path: Path,
     write_performance: WritePerformance,
+    write_config: WriteConfig,
 ) -> None:
+    """The split run is where a roll is stated, and the manifest is how it reaches the cut."""
     source = write_performance()
+    config = write_config(rolls={"pre_roll_seconds": 0.01, "post_roll_seconds": 0.4})
 
-    main([str(source), str(tmp_path / "render.mid"), "--sustain-pedal"])
+    main([str(source), str(tmp_path / "render.mid"), "--config", str(config)])
 
-    manifest = read_manifest(tmp_path / "render.notes.json")
-    assert manifest.settings.sustain_pedal is True
+    rolls = read_manifest(tmp_path / "render.notes.json").settings.rolls
+    assert (rolls.pre_roll_seconds, rolls.post_roll_seconds) == (0.01, 0.4)
 
 
-def test_a_run_leaving_the_pedal_alone_ends_each_note_at_its_key_release(
+@pytest.mark.parametrize("sustain_pedal", [True, False])
+def test_a_run_holds_each_note_as_long_as_its_document_asks_it_to(
     tmp_path: Path,
     write_performance: WritePerformance,
+    write_config: WriteConfig,
+    sustain_pedal: bool,
 ) -> None:
     source = write_performance()
+    config = write_config(split={"sustain_pedal": sustain_pedal})
 
-    main([str(source), str(tmp_path / "render.mid"), "--no-sustain-pedal"])
+    main([str(source), str(tmp_path / "render.mid"), "--config", str(config)])
 
-    manifest = read_manifest(tmp_path / "render.notes.json")
-    assert manifest.settings.sustain_pedal is False
+    assert read_manifest(tmp_path / "render.notes.json").settings.sustain_pedal is sustain_pedal
 
 
 def test_a_source_that_was_never_written_is_reported_on_stderr(
@@ -113,16 +113,31 @@ def test_a_source_that_was_never_written_is_reported_on_stderr(
     assert not render.exists()
 
 
-@pytest.mark.parametrize("flag", [["--tempo", "inf"], ["--gap-measures", "inf"]])
-def test_a_setting_the_models_turn_away_is_reported_on_stderr(
+def test_a_configuration_that_was_never_written_is_reported_on_stderr(
     tmp_path: Path,
     write_performance: WritePerformance,
     capsys: pytest.CaptureFixture[str],
-    flag: list[str],
 ) -> None:
     source = write_performance()
 
-    code = main([str(source), str(tmp_path / "render.mid"), *flag])
+    code = main([str(source), str(tmp_path / "render.mid"), "--config", str(tmp_path / "absent.yaml")])
+
+    assert code == FAILURE_EXIT_CODE
+    assert f"{PROGRAM_NAME}: cannot read configuration" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("setting", [{"tempo_bpm": -5}, {"gap_measures": -1}, {"tracked_ccs": [200]}])
+def test_a_setting_outside_the_range_it_supports_is_reported_on_stderr(
+    tmp_path: Path,
+    write_performance: WritePerformance,
+    write_config: WriteConfig,
+    capsys: pytest.CaptureFixture[str],
+    setting: dict[str, object],
+) -> None:
+    source = write_performance()
+    config = write_config(split=setting)
+
+    code = main([str(source), str(tmp_path / "render.mid"), "--config", str(config)])
 
     assert code == FAILURE_EXIT_CODE
     assert f"{PROGRAM_NAME}: invalid settings" in capsys.readouterr().err
@@ -131,38 +146,31 @@ def test_a_setting_the_models_turn_away_is_reported_on_stderr(
 def test_a_signature_a_midi_header_cannot_state_is_reported_on_stderr(
     tmp_path: Path,
     write_performance: WritePerformance,
+    write_config: WriteConfig,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     source = write_performance()
+    config = write_config(split={"signature": "4/5"})
 
-    code = main([str(source), str(tmp_path / "render.mid"), "--time-signature", "4/5"])
+    code = main([str(source), str(tmp_path / "render.mid"), "--config", str(config)])
 
     assert code == FAILURE_EXIT_CODE
     assert "denominator must be a power of two" in capsys.readouterr().err
 
 
-@pytest.mark.parametrize(
-    "flag",
-    [
-        ["--tempo", "-5"],
-        ["--tempo", "fast"],
-        ["--gap-measures", "-1"],
-        ["--cc", "200"],
-        ["--cc-channels", "16"],
-        ["--time-signature", "4"],
-    ],
-)
-def test_a_flag_the_command_line_cannot_read_exits_as_a_usage_failure(
+def test_a_document_holding_no_settings_is_reported_on_stderr(
     tmp_path: Path,
     write_performance: WritePerformance,
-    flag: list[str],
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     source = write_performance()
+    config = tmp_path / "noteextractor.yaml"
+    config.write_text("- split\n- rolls\n", encoding="utf-8")
 
-    with pytest.raises(SystemExit) as raised:
-        main([str(source), str(tmp_path / "render.mid"), *flag])
+    code = main([str(source), str(tmp_path / "render.mid"), "--config", str(config)])
 
-    assert raised.value.code == USAGE_EXIT_CODE
+    assert code == FAILURE_EXIT_CODE
+    assert "must hold named sections of settings" in capsys.readouterr().err
 
 
 def test_a_command_line_missing_the_paths_it_needs_exits_as_a_usage_failure() -> None:

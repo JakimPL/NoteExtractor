@@ -85,8 +85,24 @@ def test_an_unknown_field_is_rejected(document: dict[str, Any]) -> None:
         NoteManifest.model_validate(document)
 
 
-def test_another_schema_version_is_rejected(document: dict[str, Any]) -> None:
-    document["schema_version"] = 2
+@pytest.mark.parametrize("schema_version", [1, 3])
+def test_another_schema_version_is_rejected(document: dict[str, Any], schema_version: int) -> None:
+    document["schema_version"] = schema_version
+
+    with pytest.raises(ValidationError):
+        NoteManifest.model_validate(document)
+
+
+def test_a_manifest_carries_the_rolls_its_run_was_carried_out_with(document: dict[str, Any]) -> None:
+    """The trimmer reads the spans to cut from here, so they travel with the timings themselves."""
+    rolls = NoteManifest.model_validate(document).settings.rolls
+
+    assert (rolls.pre_roll_seconds, rolls.post_roll_seconds) == (0.01, 0.25)
+
+
+@pytest.mark.parametrize("field", ["pre_roll_seconds", "post_roll_seconds"])
+def test_a_roll_reaching_backwards_is_rejected(document: dict[str, Any], field: str) -> None:
+    document["settings"]["rolls"][field] = -0.001
 
     with pytest.raises(ValidationError):
         NoteManifest.model_validate(document)

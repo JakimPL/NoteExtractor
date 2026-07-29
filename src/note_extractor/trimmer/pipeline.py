@@ -34,17 +34,19 @@ def trim_note_stream(
     """Cut one rendered stream into the per-note samples its manifest places.
 
     Each note of the manifest names one file under `output_directory`, holding the stretch of audio
-    the note sounds over widened by the rolls the run asks for.
+    the note sounds over widened by the rolls the manifest states, which are the rolls the split run
+    that laid the render out was carried out with.
 
     Raises:
         ManifestError: If the manifest resists reading or falls outside the schema.
         AudioError: If the stream resists reading, or ends before a note the manifest places.
         OutputConflictError: If two notes claim one file, or a file an earlier run wrote is kept.
     """
-    notes = read_manifest(manifest_path).notes_in_render_order()
+    manifest = read_manifest(manifest_path)
+    notes = manifest.notes_in_render_order()
     stream = read_wav(wav_path)
     naming = SampleNaming.for_notes(notes, config.cc_decimals)
-    samples = SamplePlanner(config, naming, output_directory).plan(notes, stream)
+    samples = SamplePlanner(config, manifest.settings.rolls, naming, output_directory).plan(notes, stream)
     _write_samples(output_directory, stream, samples)
 
     return TrimResult(

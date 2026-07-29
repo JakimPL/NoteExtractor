@@ -7,7 +7,7 @@ from typing import Final, Self
 from pydantic import Field, model_validator
 
 from ..errors import AudioError, OutputConflictError
-from ..manifest.models import NoteRecord
+from ..manifest.models import NoteRecord, RollSettings
 from ..models import FrozenModel
 from .audio import AudioStream
 from .config import TrimConfig
@@ -62,13 +62,20 @@ class TrimmedSample(FrozenModel):
 class SamplePlanner:
     """Places every note of one manifest against the stream its render was recorded into.
 
-    A note is cut from its onset to the moment its sound was let go, widened by the rolls the run
-    asks for and held within the frames the stream holds. One planner plans one run, so the samples it
-    returns name one file each.
+    A note is cut from its onset to the moment its sound was let go, widened by the rolls the
+    manifest states and held within the frames the stream holds. One planner plans one run, so the
+    samples it returns name one file each.
     """
 
-    def __init__(self, config: TrimConfig, naming: SampleNaming, output_directory: Path) -> None:
+    def __init__(
+        self,
+        config: TrimConfig,
+        rolls: RollSettings,
+        naming: SampleNaming,
+        output_directory: Path,
+    ) -> None:
         self._config = config
+        self._rolls = rolls
         self._naming = naming
         self._output_directory = output_directory
 
@@ -94,8 +101,8 @@ class SamplePlanner:
         Raises:
             AudioError: If the note opens after the stream ends.
         """
-        requested_start = note.render.start_seconds - self._config.pre_roll_seconds
-        requested_end = note.render.release_end_seconds + self._config.post_roll_seconds
+        requested_start = note.render.start_seconds - self._rolls.pre_roll_seconds
+        requested_end = note.render.release_end_seconds + self._rolls.post_roll_seconds
         requested_start_frame = math.floor(requested_start * stream.sample_rate)
         requested_end_frame = math.ceil(requested_end * stream.sample_rate)
         start_frame = max(FIRST_FRAME, requested_start_frame)

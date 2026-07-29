@@ -1,13 +1,15 @@
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from typing import Final
 
 import numpy as np
 import numpy.typing as npt
 import pytest
+import yaml
 from mido import Message, MetaMessage, MidiFile, MidiTrack
 from scipy.io import wavfile
 
+from note_extractor.config import BUNDLED_CONFIG_PATH
 from note_extractor.manifest.models import (
     ManifestSettings,
     NoteManifest,
@@ -15,6 +17,7 @@ from note_extractor.manifest.models import (
     NoteTiming,
     RenderInfo,
     RenderTiming,
+    RollSettings,
     SourceInfo,
 )
 from note_extractor.manifest.storage import write_manifest
@@ -23,10 +26,12 @@ TICKS_PER_BEAT: Final = 480
 SAMPLE_RATE: Final = 1000
 TRACKED_CCS: Final = (1,)
 CC_AVERAGES: Final = {1: 63.875}
+NO_ROLLS: Final = RollSettings(pre_roll_seconds=0.0, post_roll_seconds=0.0)
 
 WritePerformance = Callable[[], Path]
-WriteManifest = Callable[[Sequence[NoteRecord]], Path]
+WriteManifest = Callable[..., Path]
 WriteRender = Callable[[int], Path]
+WriteConfig = Callable[..., Path]
 
 
 @pytest.fixture(name="write_performance")
@@ -57,9 +62,27 @@ def fixture_write_performance(tmp_path: Path) -> WritePerformance:
 def fixture_write_manifest_file(tmp_path: Path) -> WriteManifest:
     """Writes one manifest holding the given notes and gives back where it landed."""
 
-    def write(notes: Sequence[NoteRecord]) -> Path:
+    def write(notes: Sequence[NoteRecord], rolls: RollSettings = NO_ROLLS) -> Path:
         path = tmp_path / "render.notes.json"
-        write_manifest(path, _manifest(notes))
+        write_manifest(path, _manifest(notes, rolls))
+        return path
+
+    return write
+
+
+@pytest.fixture(name="write_config")
+def fixture_write_config(tmp_path: Path) -> WriteConfig:
+    """Writes the bundled settings with the given sections overridden, and gives back where it landed.
+
+    A command reads one document holding every section, so a test states the settings it varies over
+    the shipped ones rather than writing a document of its own.
+    """
+
+    def write(**sections: Mapping[str, object]) -> Path:
+        bundled = yaml.safe_load(BUNDLED_CONFIG_PATH.read_text(encoding="utf-8"))
+        document = {name: {**settings, **sections.get(name, {})} for name, settings in bundled.items()}
+        path = tmp_path / "noteextractor.yaml"
+        path.write_text(yaml.safe_dump(document), encoding="utf-8")
         return path
 
     return write
@@ -92,10 +115,10 @@ def note_record(render_index: int, start_seconds: float, release_end_seconds: fl
     )
 
 
-def _manifest(notes: Sequence[NoteRecord]) -> NoteManifest:
+def _manifest(notes: Sequence[NoteRecord], rolls: RollSettings) -> NoteManifest:
     """Manifest carrying the given notes, settled with the settings these tests read back."""
     return NoteManifest(
-        settings=ManifestSettings(tracked_ccs=TRACKED_CCS, cc_channels=(0,), sustain_pedal=True),
+        settings=ManifestSettings(tracked_ccs=TRACKED_CCS, cc_channels=(0,), sustain_pedal=True, rolls=rolls),
         source=SourceInfo(path=Path("performance.mid"), ticks_per_beat=TICKS_PER_BEAT),
         render=RenderInfo(path=Path("render.mid"), tempo_bpm=120.0, time_signature="4/4", gap_measures=0.25),
         notes=tuple(notes),

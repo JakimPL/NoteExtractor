@@ -30,10 +30,25 @@ Each package depends only on the ones below it.
 | `manifest/` | The timing contract the two stages meet at | `midi` (value ranges) |
 | `timeline/` | Tick, second, and measure arithmetic | `midi` (event types) |
 | `midi/` | Typed MIDI events, reading and writing files | — |
-| `errors.py`, `models.py`, `validation.py` | The failure hierarchy and the shared model base | — |
+| `config.py`, `errors.py`, `models.py`, `validation.py` | The settings document, the failure hierarchy, the shared model base | — |
 
 `splitter/` and `trimmer/` agree through `manifest/` alone, which is what lets the render step sit
 between them and lets each stage be read on its own.
+
+## Settings
+
+`noteextractor.yaml`, beside the package, states every value either stage takes. No model declares a
+default, so that file is where a setting's value is written once and read everywhere; a command given
+`--config PATH` reads the document there instead, and the document it reads states every section.
+
+`config.py` reads a document into its named sections and knows nothing of what any of them mean.
+Each stage owns the sections it reads: `SplitConfig.from_document` takes `split` and `rolls`, and
+`TrimConfig.from_document` takes `trim`. That split is what keeps the loader at the shared level while
+the models that judge the values stay in the layers that use them.
+
+Both commands take their positional paths, `--config`, and nothing else that settles a value:
+`--overwrite` remains a flag because replacing an earlier run's samples is a decision about one
+invocation rather than about a dataset.
 
 ## The spine
 
@@ -75,7 +90,7 @@ stream's frame count and rate.
 **Validation happens at construction.** The shared model base freezes its fields, accepts exactly the
 fields it declares, and requires every number to be finite. A model that exists is therefore a model
 whose values hold, so layers carry out tick and second arithmetic on the strength of the type alone.
-Commands convert the resulting report into a message naming the setting at fault.
+A value the models turn away is reported as a `ConfigurationError` naming the setting at fault.
 
 ## The manifest
 
@@ -84,6 +99,9 @@ them is how you learn the exact shape of the document. What matters at this leve
 
 - A manifest states the version of its own shape, so a reader can tell a document it understands from
   one written by another release.
+- A manifest carries the rolls the split run was carried out with, which is how the trimmer learns how
+  far past each end to cut. Changing a roll means re-running the splitter, which leaves the render MIDI
+  untouched — the rolls take no part in the layout — so no rendering pass is repeated.
 - Each note carries its place in the **source** performance and its place in the **render**, which is
   the pairing that lets audio cut from the render be traced back to how it was played.
 - Render indices are unique across a manifest, so one sample file belongs to exactly one note.
@@ -95,10 +113,10 @@ Everything the tool reports as a failure of the material it was given derives fr
 `NoteExtractorError`, raised where the problem is found and caught once per command at the boundary.
 A command prints the reason on stderr, prefixed with its own name, and exits 1.
 
-Argparse keeps exit 2 for a flag it fails to read. The dividing line is ownership: a parser judges the
-syntax of a value and the range that flag accepts, while the models judge whether the settings make a
-run the pipeline can carry out. So `--tempo -5` is a usage failure, and a time signature whose note
-value falls outside the powers of two a MIDI header states is a settings failure.
+Argparse keeps exit 2 for the command line itself — a path left out, a flag it does not know. Every
+value a run is carried out under arrives in the settings document, so the models are what judge it, and
+both a tempo of `-5` and a time signature whose note value falls outside the powers of two a MIDI header
+states are reported as settings failures on stderr with exit 1.
 
 ## Vocabulary
 

@@ -6,7 +6,7 @@ from pydantic import Field, model_validator
 from ..midi.constants import MAX_DATA_BYTE, MIN_DATA_BYTE, DataByte, MidiChannel
 from ..models import FrozenModel
 
-SCHEMA_VERSION: Final = 1
+SCHEMA_VERSION: Final = 2
 TIME_SIGNATURE_PATTERN: Final = r"^[1-9][0-9]*/[1-9][0-9]*$"
 
 ControlAverage = Annotated[float, Field(ge=MIN_DATA_BYTE, le=MAX_DATA_BYTE)]
@@ -73,12 +73,26 @@ class NoteRecord(FrozenModel):
     render: RenderTiming
 
 
+class RollSettings(FrozenModel):
+    """Audio kept around each note when the render is cut back apart.
+
+    `pre_roll_seconds` reaches back before the onset and `post_roll_seconds` carries on past the
+    moment the sound was let go, which keeps the tail of the release. One run states them, and the
+    manifest carries them to the trimmer that cuts the spans they describe, so both stages of an
+    extraction hold the same rolls however far apart they run.
+    """
+
+    pre_roll_seconds: float = Field(ge=0)
+    post_roll_seconds: float = Field(ge=0)
+
+
 class ManifestSettings(FrozenModel):
     """Extraction settings the run was carried out with."""
 
     tracked_ccs: tuple[DataByte, ...]
     cc_channels: tuple[MidiChannel, ...]
     sustain_pedal: bool
+    rolls: RollSettings
 
 
 class SourceInfo(FrozenModel):
@@ -106,7 +120,7 @@ class NoteManifest(FrozenModel):
     traced back to exactly one note.
     """
 
-    schema_version: Literal[1] = SCHEMA_VERSION
+    schema_version: Literal[2] = SCHEMA_VERSION
     settings: ManifestSettings
     source: SourceInfo
     render: RenderInfo

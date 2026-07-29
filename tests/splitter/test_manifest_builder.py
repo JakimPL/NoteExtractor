@@ -12,6 +12,8 @@ from note_extractor.splitter.notes import SourceNote
 from note_extractor.timeline.meter import MeterMap, TimeSignature
 from note_extractor.timeline.tempo import TempoMap
 
+from .conftest import split_config
+
 TICKS_PER_BEAT: Final = 480
 SOURCE_PATH: Final = Path("performance.mid")
 RENDER_PATH: Final = Path("render.mid")
@@ -26,7 +28,7 @@ def test_a_pitch_is_named_by_its_class_and_octave(pitch: int, name: str) -> None
 
 
 def test_a_manifest_states_the_settings_the_run_was_carried_out_with() -> None:
-    settings = _settings(SplitConfig(tempo_bpm=115.0, tracked_ccs=frozenset({64, 1}), gap_measures=0.25))
+    settings = _settings(split_config(tempo_bpm=115.0, tracked_ccs=frozenset({64, 1}), gap_measures=0.25))
 
     manifest = _build(settings, notes=[_note(source_id=0, start_tick=0, key_end_tick=480, release_end_tick=720)])
 
@@ -42,7 +44,7 @@ def test_a_manifest_states_the_settings_the_run_was_carried_out_with() -> None:
 
 
 def test_a_run_in_an_uncommon_meter_states_the_signature_it_was_laid_out_in() -> None:
-    settings = _settings(SplitConfig(signature=TimeSignature(numerator=7, denominator=8)))
+    settings = _settings(split_config(signature=TimeSignature(numerator=7, denominator=8)))
 
     manifest = _build(settings, notes=[_note(source_id=0, start_tick=0, key_end_tick=480, release_end_tick=480)])
 
@@ -50,7 +52,7 @@ def test_a_run_in_an_uncommon_meter_states_the_signature_it_was_laid_out_in() ->
 
 
 def test_a_record_states_where_its_note_was_played_alongside_where_it_was_laid_out() -> None:
-    settings = _settings(SplitConfig(tempo_bpm=120.0, gap_measures=0.25))
+    settings = _settings(split_config(tempo_bpm=120.0, gap_measures=0.25))
     note = _note(source_id=0, start_tick=1920, key_end_tick=2400, release_end_tick=2640)
 
     record = _build(settings, notes=[note]).notes[0]
@@ -71,7 +73,7 @@ def test_a_record_states_where_its_note_was_played_alongside_where_it_was_laid_o
 
 def test_the_timings_of_a_note_are_read_from_the_performance_it_belongs_to() -> None:
     """The source keeps its own tempo changes while the render holds one tempo throughout."""
-    settings = _settings(SplitConfig(tempo_bpm=120.0))
+    settings = _settings(split_config(tempo_bpm=120.0))
     source = PerformanceTiming(
         tempo=TempoMap(TICKS_PER_BEAT, [(0, 1_000_000)]),
         meter=MeterMap.constant(TICKS_PER_BEAT, TimeSignature(numerator=4, denominator=4)),
@@ -87,7 +89,7 @@ def test_the_timings_of_a_note_are_read_from_the_performance_it_belongs_to() -> 
 
 
 def test_the_averages_of_a_note_are_stated_in_controller_order() -> None:
-    settings = _settings(SplitConfig())
+    settings = _settings(split_config())
     note = _note(source_id=0, start_tick=0, key_end_tick=480, release_end_tick=480)
 
     record = _build(settings, notes=[note], averages={0: {64: 12.5, 1: 90.0}}).notes[0]
@@ -97,7 +99,7 @@ def test_the_averages_of_a_note_are_stated_in_controller_order() -> None:
 
 
 def test_the_notes_of_a_manifest_follow_the_order_they_were_laid_out_in() -> None:
-    settings = _settings(SplitConfig())
+    settings = _settings(split_config())
     notes = [
         _note(source_id=0, start_tick=0, key_end_tick=480, release_end_tick=480, pitch=72),
         _note(source_id=1, start_tick=960, key_end_tick=1440, release_end_tick=1440, pitch=60),

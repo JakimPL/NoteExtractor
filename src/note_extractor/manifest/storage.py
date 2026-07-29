@@ -12,7 +12,10 @@ MANIFEST_INDENT: Final = 2
 
 
 def read_manifest(path: Path) -> NoteManifest:
-    """Manifest stored at the given path.
+    """Manifest stored at the given path, as the current release writes it.
+
+    A manifest an earlier release wrote states an earlier version, and is reported by the version it
+    states so it can be written again by re-splitting the performance it came from.
 
     Raises:
         ManifestError: If the file resists reading, holds text that is not JSON, states another

@@ -8,6 +8,7 @@ import numpy.typing as npt
 import pytest
 from scipy.io import wavfile
 
+from note_extractor.config import load_config
 from note_extractor.manifest.models import (
     ManifestSettings,
     NoteManifest,
@@ -15,26 +16,35 @@ from note_extractor.manifest.models import (
     NoteTiming,
     RenderInfo,
     RenderTiming,
+    RollSettings,
     SourceInfo,
 )
 from note_extractor.manifest.storage import write_manifest
 from note_extractor.trimmer.audio import AudioStream
+from note_extractor.trimmer.config import TrimConfig
 
 SAMPLE_RATE: Final = 1000
 TICKS_PER_SECOND: Final = 960
 DEFAULT_CC_AVERAGES: Final = MappingProxyType({0: 3.0, 1: 63.875})
+NO_ROLLS: Final = RollSettings(pre_roll_seconds=0.0, post_roll_seconds=0.0)
 
-WriteManifest = Callable[[Sequence[NoteRecord]], Path]
+BUNDLED: Final = TrimConfig.from_document(load_config(None), overwrite=False)
+
+WriteManifest = Callable[..., Path]
 WriteRender = Callable[[npt.NDArray[np.int16]], Path]
 
 
 @pytest.fixture(name="write_manifest_file")
 def fixture_write_manifest_file(tmp_path: Path) -> WriteManifest:
-    """Writer storing the given notes as the manifest a trim run reads."""
+    """Writer storing the given notes as the manifest a trim run reads.
 
-    def write(notes: Sequence[NoteRecord]) -> Path:
+    The rolls travel with the notes, since the manifest is where a trim run reads how far past each
+    end to cut.
+    """
+
+    def write(notes: Sequence[NoteRecord], rolls: RollSettings = NO_ROLLS) -> Path:
         path = tmp_path / "render.notes.json"
-        write_manifest(path, manifest_of(notes))
+        write_manifest(path, manifest_of(notes, rolls))
         return path
 
     return write
@@ -52,10 +62,15 @@ def fixture_write_render(tmp_path: Path) -> WriteRender:
     return write
 
 
-def manifest_of(notes: Sequence[NoteRecord]) -> NoteManifest:
+def trim_config(**overrides: object) -> TrimConfig:
+    """The bundled trim settings with the given fields overridden, re-validated."""
+    return TrimConfig.model_validate({**BUNDLED.model_dump(), **overrides})
+
+
+def manifest_of(notes: Sequence[NoteRecord], rolls: RollSettings = NO_ROLLS) -> NoteManifest:
     """Manifest carrying the given notes, with settings a split run would have stated."""
     return NoteManifest(
-        settings=ManifestSettings(tracked_ccs=(0, 1), cc_channels=(0,), sustain_pedal=True),
+        settings=ManifestSettings(tracked_ccs=(0, 1), cc_channels=(0,), sustain_pedal=True, rolls=rolls),
         source=SourceInfo(path=Path("performance.mid"), ticks_per_beat=480),
         render=RenderInfo(path=Path("render.mid"), tempo_bpm=120.0, time_signature="4/4", gap_measures=0.25),
         notes=tuple(notes),

@@ -2,18 +2,18 @@ from collections.abc import Set as AbstractSet
 from functools import cached_property
 from typing import Final, Self
 
-from pydantic import Field, field_validator
+from pydantic import Field, ValidationError, field_validator
 
+from ..config import ConfigDocument, section
+from ..manifest.models import RollSettings
 from ..midi.constants import SUSTAIN_PEDAL_CONTROL, DataByte, MidiChannel
 from ..models import FrozenModel
 from ..timeline.meter import ConstantMeter, TimeSignature
 from ..timeline.tempo import microseconds_per_beat
+from ..validation import configuration_failure
 
-DEFAULT_TEMPO_BPM: Final = 120.0
-DEFAULT_RENDER_SIGNATURE: Final = TimeSignature(numerator=4, denominator=4)
-DEFAULT_TRACKED_CCS: Final = frozenset({0, 1})
-DEFAULT_GAP_MEASURES: Final = 0.25
-DEFAULT_SUSTAIN_PEDAL: Final = True
+SPLIT_SECTION: Final = "split"
+ROLLS_SECTION: Final = "rolls"
 
 MIN_GAP_TICKS: Final = 1
 
@@ -23,15 +23,44 @@ class SplitConfig(FrozenModel):
 
     `tracked_ccs` names the controllers each rendered note opens with and the manifest reports an
     average for. `cc_channels` names the channels whose controller messages reach the render; a run
-    that leaves it open takes the channels carrying notes in the source performance.
+    that leaves it open takes the channels carrying notes in the source performance. `rolls` states
+    the audio each note keeps around it, which the run records for the trimmer to cut by.
     """
 
-    tempo_bpm: float = Field(default=DEFAULT_TEMPO_BPM, gt=0)
-    signature: TimeSignature = DEFAULT_RENDER_SIGNATURE
-    tracked_ccs: frozenset[DataByte] = DEFAULT_TRACKED_CCS
-    cc_channels: frozenset[MidiChannel] | None = None
-    gap_measures: float = Field(default=DEFAULT_GAP_MEASURES, ge=0)
-    sustain_pedal: bool = DEFAULT_SUSTAIN_PEDAL
+    tempo_bpm: float = Field(gt=0)
+    signature: TimeSignature
+    tracked_ccs: frozenset[DataByte]
+    cc_channels: frozenset[MidiChannel] | None
+    gap_measures: float = Field(ge=0)
+    sustain_pedal: bool
+    rolls: RollSettings
+
+    @classmethod
+    def from_document(cls, document: ConfigDocument) -> Self:
+        """Settings a split run reads from one configuration document.
+
+        A run is carried out under the `split` settings and records the `rolls` beside them, so the
+        two sections travel together from the document into the manifest.
+
+        Raises:
+            ConfigurationError: If the document leaves either section out, or states a value
+                outside the range one supports.
+        """
+        settings = {**section(document, SPLIT_SECTION), ROLLS_SECTION: section(document, ROLLS_SECTION)}
+        try:
+            return cls.model_validate(settings)
+        except ValidationError as error:
+            raise configuration_failure(error) from error
+
+    @field_validator("signature", mode="before")
+    @classmethod
+    def _read_a_written_signature(cls, signature: object) -> object:
+        """Signature a document writes as a count over a note value, such as `4/4`.
+
+        Raises:
+            ValueError: If the text holds anything other than two whole numbers around a slash.
+        """
+        return TimeSignature.parse(signature) if isinstance(signature, str) else signature
 
     @field_validator("signature")
     @classmethod
@@ -61,6 +90,7 @@ class RenderSettings(FrozenModel):
     cc_channels: frozenset[MidiChannel]
     gap_measures: float = Field(ge=0)
     sustain_pedal: bool
+    rolls: RollSettings
 
     @classmethod
     def from_config(cls, config: SplitConfig, ticks_per_beat: int, note_channels: AbstractSet[int]) -> Self:
@@ -76,6 +106,7 @@ class RenderSettings(FrozenModel):
             cc_channels=frozenset(note_channels) if config.cc_channels is None else config.cc_channels,
             gap_measures=config.gap_measures,
             sustain_pedal=config.sustain_pedal,
+            rolls=config.rolls,
         )
 
     @cached_property

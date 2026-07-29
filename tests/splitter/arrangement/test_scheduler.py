@@ -8,6 +8,8 @@ from note_extractor.splitter.config import RenderSettings, SplitConfig
 from note_extractor.splitter.controllers import ControllerTimeline
 from note_extractor.splitter.notes import SourceNote
 
+from ..conftest import split_config
+
 TICKS_PER_BEAT: Final = 480
 MODULATION: Final = 1
 VOLUME: Final = 7
@@ -21,7 +23,7 @@ def test_a_note_opens_with_the_settings_its_source_stretch_held() -> None:
             _posted(tick=0, sequence=1, channel=0, control=VOLUME, value=100),
         ],
     )
-    settings = _settings(SplitConfig(tracked_ccs=frozenset({MODULATION, VOLUME}), sustain_pedal=False))
+    settings = _settings(split_config(tracked_ccs=frozenset({MODULATION, VOLUME}), sustain_pedal=False))
 
     events = _schedule(controllers, settings, [_note(start_tick=480, key_end_tick=960, release_end_tick=960)])
 
@@ -37,7 +39,7 @@ def test_a_controller_on_the_onset_tick_keeps_its_place_around_the_key_press() -
             _posted(tick=0, sequence=2, channel=0, control=MODULATION, value=20),
         ],
     )
-    settings = _settings(SplitConfig(tracked_ccs=frozenset({MODULATION}), sustain_pedal=False))
+    settings = _settings(split_config(tracked_ccs=frozenset({MODULATION}), sustain_pedal=False))
     note = _note(start_tick=0, key_end_tick=480, release_end_tick=480, start_sequence=1)
 
     events = _schedule(controllers, settings, [note])
@@ -58,7 +60,7 @@ def test_the_controllers_of_a_note_stretch_are_copied_where_the_note_was_laid_ou
             _posted(tick=1440, sequence=6, channel=0, control=MODULATION, value=60),
         ],
     )
-    settings = _settings(SplitConfig(tracked_ccs=frozenset({MODULATION}), sustain_pedal=False))
+    settings = _settings(split_config(tracked_ccs=frozenset({MODULATION}), sustain_pedal=False))
     note = _note(start_tick=960, key_end_tick=1920, release_end_tick=1920, start_sequence=1)
 
     events = _schedule(controllers, settings, [note])
@@ -76,7 +78,7 @@ def test_a_controller_posted_after_the_note_was_let_go_of_stays_out_of_the_rende
     controllers = ControllerTimeline(
         [_posted(tick=1921, sequence=9, channel=0, control=MODULATION, value=60)],
     )
-    settings = _settings(SplitConfig(tracked_ccs=frozenset({MODULATION}), sustain_pedal=False))
+    settings = _settings(split_config(tracked_ccs=frozenset({MODULATION}), sustain_pedal=False))
     note = _note(start_tick=960, key_end_tick=1920, release_end_tick=1920, start_sequence=1)
 
     events = _schedule(controllers, settings, [note])
@@ -88,7 +90,7 @@ def test_a_note_sounding_past_its_key_release_closes_with_the_pedal_coming_up() 
     controllers = ControllerTimeline(
         [_posted(tick=0, sequence=0, channel=0, control=SUSTAIN, value=127)],
     )
-    settings = _settings(SplitConfig(tracked_ccs=frozenset({SUSTAIN}), sustain_pedal=True))
+    settings = _settings(split_config(tracked_ccs=frozenset({SUSTAIN}), sustain_pedal=True))
     note = _note(start_tick=480, key_end_tick=960, release_end_tick=1200, start_sequence=1)
 
     events = _schedule(controllers, settings, [note])
@@ -104,7 +106,7 @@ def test_a_note_sounding_past_its_key_release_closes_with_the_pedal_coming_up() 
 
 def test_a_note_let_go_of_at_its_key_release_needs_no_pedal_release() -> None:
     controllers = ControllerTimeline([])
-    settings = _settings(SplitConfig(tracked_ccs=frozenset({SUSTAIN}), sustain_pedal=True))
+    settings = _settings(split_config(tracked_ccs=frozenset({SUSTAIN}), sustain_pedal=True))
     note = _note(start_tick=0, key_end_tick=480, release_end_tick=480, start_sequence=1)
 
     events = _schedule(controllers, settings, [note])
@@ -123,7 +125,7 @@ def test_a_run_leaving_the_pedal_alone_keeps_it_out_of_the_render() -> None:
             _posted(tick=240, sequence=3, channel=0, control=SUSTAIN, value=0),
         ],
     )
-    settings = _settings(SplitConfig(tracked_ccs=frozenset({MODULATION, SUSTAIN}), sustain_pedal=False))
+    settings = _settings(split_config(tracked_ccs=frozenset({MODULATION, SUSTAIN}), sustain_pedal=False))
     note = _note(start_tick=0, key_end_tick=480, release_end_tick=480, start_sequence=1)
 
     events = _schedule(controllers, settings, [note])
@@ -140,7 +142,7 @@ def test_a_note_played_outside_the_copied_channels_still_opens_with_its_own_peda
         ],
     )
     settings = _settings(
-        SplitConfig(tracked_ccs=frozenset({MODULATION}), cc_channels=frozenset({0}), sustain_pedal=True)
+        split_config(tracked_ccs=frozenset({MODULATION}), cc_channels=frozenset({0}), sustain_pedal=True)
     )
     note = _note(start_tick=240, key_end_tick=720, release_end_tick=840, channel=3, start_sequence=2)
 
@@ -159,7 +161,7 @@ def test_a_note_played_outside_the_copied_channels_still_opens_with_its_own_peda
 
 def test_every_note_of_a_render_is_voiced_in_the_order_it_was_laid_out() -> None:
     controllers = ControllerTimeline([])
-    settings = _settings(SplitConfig(tracked_ccs=frozenset({MODULATION}), sustain_pedal=False))
+    settings = _settings(split_config(tracked_ccs=frozenset({MODULATION}), sustain_pedal=False))
     notes = [
         _note(start_tick=0, key_end_tick=480, release_end_tick=480, pitch=72, start_sequence=1),
         _note(start_tick=960, key_end_tick=1440, release_end_tick=1440, pitch=60, start_sequence=4),

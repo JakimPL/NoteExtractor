@@ -14,6 +14,7 @@ import pytest
 from mido import Message, MetaMessage, MidiFile, MidiTrack
 from scipy.io import wavfile
 
+from note_extractor.manifest.models import RollSettings
 from note_extractor.splitter import SplitConfig, split_midi
 from note_extractor.timeline.meter import TimeSignature
 from note_extractor.trimmer import TrimConfig, trim_note_stream
@@ -35,13 +36,9 @@ SPLIT_CONFIG: Final = SplitConfig(
     cc_channels=None,
     gap_measures=0.25,
     sustain_pedal=True,
+    rolls=RollSettings(pre_roll_seconds=0.005, post_roll_seconds=0.05),
 )
-TRIM_CONFIG: Final = TrimConfig(
-    pre_roll_seconds=0.005,
-    post_roll_seconds=0.05,
-    cc_decimals=3,
-    overwrite=False,
-)
+TRIM_CONFIG: Final = TrimConfig(cc_decimals=3, overwrite=False)
 
 
 @dataclass(frozen=True, slots=True)

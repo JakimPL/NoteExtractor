@@ -16,6 +16,7 @@ CONFINED_LIBRARIES: Final = {
     "mido": frozenset({"midi/reader.py", "midi/writer.py"}),
     "scipy": frozenset({"trimmer/audio.py"}),
     "numpy": frozenset({"trimmer/audio.py"}),
+    "yaml": frozenset({"config.py"}),
 }
 
 

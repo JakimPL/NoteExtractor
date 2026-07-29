@@ -10,6 +10,7 @@ from note_extractor.manifest.models import (
     NoteTiming,
     RenderInfo,
     RenderTiming,
+    RollSettings,
     SourceInfo,
 )
 
@@ -18,7 +19,12 @@ from note_extractor.manifest.models import (
 def fixture_manifest() -> NoteManifest:
     """Two-note manifest whose notes are stored ahead of their render order."""
     return NoteManifest(
-        settings=ManifestSettings(tracked_ccs=(1, 64), cc_channels=(0,), sustain_pedal=True),
+        settings=ManifestSettings(
+            tracked_ccs=(1, 64),
+            cc_channels=(0,),
+            sustain_pedal=True,
+            rolls=RollSettings(pre_roll_seconds=0.01, post_roll_seconds=0.25),
+        ),
         source=SourceInfo(path=Path("performance.mid"), ticks_per_beat=480),
         render=RenderInfo(path=Path("render.mid"), tempo_bpm=115.0, time_signature="4/4", gap_measures=0.25),
         notes=(_note(source_id=1, render_index=1), _note(source_id=0, render_index=0)),

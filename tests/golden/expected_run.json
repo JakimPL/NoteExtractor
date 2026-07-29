@@ -5,12 +5,16 @@
     "tempo_bpm": 115.0,
     "time_signature": "4/4"
   },
-  "schema_version": 1,
+  "schema_version": 2,
   "settings": {
     "cc_channels": [
       0,
       1
     ],
+    "rolls": {
+      "post_roll_seconds": 0.05,
+      "pre_roll_seconds": 0.005
+    },
     "sustain_pedal": true,
     "tracked_ccs": [
       0,
