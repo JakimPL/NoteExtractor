@@ -10,7 +10,7 @@ split:
   sustain_pedal: true       # hold each note as long as the sustain pedal held it
 
 rolls:
-  pre_roll_seconds: 0.0     # audio kept ahead of each onset
+  pre_roll_seconds: 0.05    # audio kept ahead of each onset
   post_roll_seconds: 0.5    # audio kept past the moment each note was let go of
 
 trim:
