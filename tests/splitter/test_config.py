@@ -23,6 +23,7 @@ SPLIT: Final[dict[str, object]] = {
     "cc_channels": None,
     "gap_measures": 0.5,
     "sustain_pedal": False,
+    "skip_below_seconds": 0.2,
     "min_note_seconds": 1.0,
     "max_note_seconds": 5.0,
 }
@@ -37,6 +38,7 @@ def test_a_document_states_every_setting_a_run_is_carried_out_with() -> None:
     assert config.cc_channels is None
     assert config.gap_measures == 0.5
     assert config.sustain_pedal is False
+    assert config.skip_below_seconds == 0.2
     assert (config.min_note_seconds, config.max_note_seconds) == (1.0, 5.0)
     assert (config.rolls.pre_roll_seconds, config.rolls.post_roll_seconds) == (0.0, 0.25)
 
@@ -108,6 +110,8 @@ def test_a_signature_a_midi_header_states_is_accepted(denominator: int) -> None:
         ("tracked_ccs", frozenset({128})),
         ("tracked_ccs", frozenset({-1})),
         ("cc_channels", frozenset({16})),
+        ("skip_below_seconds", 0.0),
+        ("skip_below_seconds", -0.2),
         ("min_note_seconds", 0.0),
         ("min_note_seconds", -1.0),
         ("max_note_seconds", 0.0),
@@ -146,20 +150,32 @@ def test_a_gap_rounding_down_to_nothing_still_separates_two_notes(gap_measures: 
 
 def test_the_span_a_note_sounds_over_is_read_at_the_tempo_the_render_is_laid_out_at() -> None:
     """The render is the timing the samples are cut from, so its own beat turns seconds into ticks."""
-    bounds = settings(split_config(tempo_bpm=120.0, min_note_seconds=1.0, max_note_seconds=5.0)).duration_bounds
+    bounds = settings(
+        split_config(tempo_bpm=120.0, skip_below_seconds=0.5, min_note_seconds=1.0, max_note_seconds=5.0)
+    ).duration_bounds
 
+    assert bounds.skip_below_ticks == TICKS_PER_BEAT
     assert bounds.minimum_ticks == 2 * TICKS_PER_BEAT
     assert bounds.maximum_ticks == 10 * TICKS_PER_BEAT
 
 
 def test_a_slower_render_sounds_the_same_seconds_over_fewer_ticks() -> None:
-    bounds = settings(split_config(tempo_bpm=60.0, min_note_seconds=1.0, max_note_seconds=5.0)).duration_bounds
+    bounds = settings(
+        split_config(tempo_bpm=60.0, skip_below_seconds=0.5, min_note_seconds=1.0, max_note_seconds=5.0)
+    ).duration_bounds
 
+    assert bounds.skip_below_ticks == TICKS_PER_BEAT // 2
     assert bounds.minimum_ticks == TICKS_PER_BEAT
     assert bounds.maximum_ticks == 5 * TICKS_PER_BEAT
 
 
-def test_a_run_naming_no_shortest_note_takes_every_note_it_finds() -> None:
+def test_a_run_naming_no_briefest_note_takes_every_note_it_finds() -> None:
+    bounds = settings(split_config(skip_below_seconds=None)).duration_bounds
+
+    assert bounds.skip_below_ticks == NO_MINIMUM_TICKS
+
+
+def test_a_run_naming_no_shortest_note_holds_none_of_them_on() -> None:
     bounds = settings(split_config(min_note_seconds=None)).duration_bounds
 
     assert bounds.minimum_ticks == NO_MINIMUM_TICKS

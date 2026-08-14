@@ -118,6 +118,30 @@ def test_a_note_let_go_of_at_its_key_release_needs_no_pedal_release() -> None:
     ]
 
 
+def test_a_note_ending_over_a_pedal_the_source_pressed_meanwhile_closes_with_it_coming_up() -> None:
+    """A note the run holds on or cuts short reaches over a stretch the performance played on past.
+
+    Its own key release is what ends it, so a pedal pressed within that stretch would carry its
+    sound into the notes laid out after it.
+    """
+    controllers = ControllerTimeline(
+        [_posted(tick=240, sequence=3, channel=0, control=SUSTAIN, value=127)],
+    )
+    settings = _settings(split_config(tracked_ccs=frozenset({SUSTAIN}), sustain_pedal=True))
+    note = _note(start_tick=0, key_end_tick=960, release_end_tick=960, start_sequence=1)
+
+    events = _schedule(controllers, settings, [note])
+
+    assert _voiced(events) == [
+        ("control_change", SUSTAIN, 0),
+        ("note_on", 60, 100),
+        ("control_change", SUSTAIN, 127),
+        ("note_off", 60, 0),
+        ("control_change", SUSTAIN, 0),
+    ]
+    assert [event.position.tick for event in events] == [0, 0, 240, 960, 960]
+
+
 def test_a_run_leaving_the_pedal_alone_keeps_it_out_of_the_render() -> None:
     controllers = ControllerTimeline(
         [

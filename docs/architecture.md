@@ -61,12 +61,26 @@ read MIDI ─→ extract notes ─→ bound the spans ─→ lay out ─→ voic
 ```
 
 *Extract* pairs each key press with the release that ends it and works out when the sound was
-actually let go, which the sustain pedal can hold past the key release. *Bound the spans* leaves out
-the notes too short to be worth a sample and lets go of the ones outlasting the longest sample a run
-takes, so every stage after it reads a note as the run sounds it rather than as it was played. *Lay
-out* sorts the notes into render order and assigns each a stretch of the render timeline, keeping the
-spans it sounds over. *Voice* gives each note the controller settings its source stretch held: a
-snapshot at its onset, the messages posted while it sounded, and a pedal release closing it.
+actually let go, which the sustain pedal can hold past the key release. *Bound the spans* settles how
+long each note sounds, so every stage after it reads a note as the run sounds it rather than as it
+was played. *Lay out* sorts the notes into render order and assigns each a stretch of the render
+timeline, keeping the spans it sounds over. *Voice* gives each note the controller settings its
+source stretch held: a snapshot at its onset, the messages posted while it sounded, and a pedal
+release closing it.
+
+Three bounds settle the spans, and they read the same note at two different moments. The briefest
+span reads it **as it was played**: a key brushed for less than that was never a note worth sampling,
+so the run leaves it out. The shortest and longest spans read it **as the render sounds it**: a note
+the run keeps is held on until it has sounded the shortest span, and one still sounding at the
+longest is let go of there. Between them, every note reaching the render is worth a sample and every
+sample is worth playing back, which is the point of stating the three separately — a note played too
+briefly to sample and a note simply shorter than the sample length call for opposite treatment.
+
+A note is held on by keeping its key down to the end of the span, since a key held down is what
+carries a note past the moment the performance let go of it. That leaves it ending on a key release
+alone, which is why the voicing lifts the pedal wherever it is still down at a note's end: the
+stretch a held or capped note covers may take in a pedal press the performance made after that note
+had finished, and its sound would otherwise carry into the notes laid out after it.
 
 The bounds a run states in seconds are read against the **render's** own tempo and resolution, since
 the render is the timing the samples are laid out at and cut from, and a note carries the same ticks
@@ -111,9 +125,9 @@ them is how you learn the exact shape of the document. What matters at this leve
 - Each note carries its place in the **source** performance and its place in the **render**, which is
   the pairing that lets audio cut from the render be traced back to how it was played.
 - A manifest states the notes a run sounded rather than every note the source holds: one left out for
-  sounding too briefly is simply absent, and one cut short carries the stretch the render holds of it
-  on both timelines. The bounds themselves stay out of the document, since a trimmer reading it needs
-  the spans it cuts and nothing about how they were arrived at.
+  being played too briefly is simply absent, and one held on or cut short carries the stretch the
+  render holds of it on both timelines. The bounds themselves stay out of the document, since a
+  trimmer reading it needs the spans it cuts and nothing about how they were arrived at.
 - Render indices are unique across a manifest, so one sample file belongs to exactly one note.
 - Unknown fields are refused, so a producer that has drifted reports itself on the first read.
 
@@ -139,14 +153,14 @@ places an event exactly, and comparing the two in that order gives one total ord
 
 **Key end and release end** — the two ways a note ends. The key end is the moment the key came up.
 The release end is the moment the sound was let go, which the sustain pedal can hold past the key
-end, and which is where a sample is cut. A run capping how long a note sounds lets it go where that
-cap runs out, bringing the key up there too, so a note it cuts short still ends from its start
-onwards.
+end, and which is where a sample is cut. A run settling how long a note sounds moves both ends to
+where its span runs out: it holds the key down to reach the shortest span it sounds and brings the
+key up at the longest, so a note it holds on or cuts short still ends from its start onwards.
 
 **Source and render** — the two timelines every note sits on. The source is the performance as it was
 played, with whatever tempo and meter changes it carries. The render is the file this tool writes: one
 note at a time, one tempo, one time signature. A note keeps the ticks it sounds over when it moves
-between them, which are the ticks it was played with unless the run capped how long it sounds.
+between them, which are the ticks it was played with unless the run settled how long it sounds.
 
 **Frame** — one moment of recorded audio, holding one value per channel. Seconds from the manifest
 become frames through the WAV's own sample rate.

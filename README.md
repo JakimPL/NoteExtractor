@@ -53,8 +53,9 @@ split:
   cc_channels: null         # channels whose controllers reach the render; empty takes those carrying notes
   gap_measures: 0.25        # space left between one note's release and the next note's onset
   sustain_pedal: true       # hold each note as long as the sustain pedal held it
-  min_note_seconds: 1.0     # shortest a note may sound to be worth a sample; empty takes them all
-  max_note_seconds: 5.0     # longest a note sounds before it is let go of; empty lets it sound on
+  skip_below_seconds: 0.2   # played more briefly than this and a note is left out; empty takes them all
+  min_note_seconds: 1.0     # a note the run keeps is held on until it has sounded this long
+  max_note_seconds: 5.0     # a note still sounding here is let go of; empty lets it sound on
 
 rolls:
   pre_roll_seconds: 0.05    # audio kept ahead of each onset
@@ -73,12 +74,22 @@ stream-note-trimmer isolated.wav isolated.notes.json samples --config piano.yaml
 
 A document a command is given states every section, since no setting keeps a default of its own.
 
-**How long a note sounds** is settled by the split run: one sounding for less than `min_note_seconds`
-is left out of the render altogether, since nothing worth playing back is cut from it, and one still
-sounding at `max_note_seconds` is let go of there, key and pedal alike. Both are read at the tempo the
-render is laid out at, which is the timing the samples are cut from, and leaving either empty (`null`)
-holds no bound of that kind. A note left out is absent from the manifest too, so the run writes no
-sample for it.
+**How long a note sounds** is settled by the split run, and three settings do it:
+
+- `skip_below_seconds` reads a note as it was played. A key brushed for less than this was never a
+  note worth sampling, so the run leaves it out of the render altogether. It is absent from the
+  manifest too, so no sample is written for it.
+- `min_note_seconds` is the shortest a sample may be. A note the run keeps but the performance let go
+  of sooner is held on — its key stays down — until it has sounded this long.
+- `max_note_seconds` is the longest. A note still sounding here is let go of, key and pedal alike.
+
+So a brief note is either dropped or lengthened, never both: set `skip_below_seconds` to whatever you
+would call an accident, and everything above it becomes a sample of at least `min_note_seconds`.
+Leaving any of the three empty (`null`) holds no bound of that kind.
+
+All three are read at the tempo the render is laid out at, which is the timing the samples are cut
+from. A note the run holds on or cuts short is recorded in the manifest over the span it sounds,
+which is what the sample holds.
 
 The **rolls belong to the split run**: it records them in the manifest, and the trimmer cuts the spans
 they describe without being told them again. Changing a roll means re-running `midi-note-splitter`,

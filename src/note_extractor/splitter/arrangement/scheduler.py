@@ -1,7 +1,7 @@
 import itertools
 from collections.abc import Sequence
 
-from ...midi.constants import PEDAL_UP_VALUE, SUSTAIN_PEDAL_CONTROL
+from ...midi.constants import PEDAL_DOWN_THRESHOLD, PEDAL_UP_VALUE, SUSTAIN_PEDAL_CONTROL
 from ...midi.events import (
     ControlChange,
     EventPosition,
@@ -21,8 +21,8 @@ class NoteScheduler:
 
     A note opens with a snapshot of the controllers the run tracks, so it sounds with the settings
     the source held at its onset, and carries the controller messages the source posted while it
-    sounded. A run following the sustain pedal closes each note by letting the pedal up. One
-    scheduler places one render.
+    sounded. A run following the sustain pedal closes a note the pedal is still holding where it
+    ends by letting the pedal up. One scheduler places one render.
     """
 
     def __init__(self, controllers: ControllerTimeline, settings: RenderSettings) -> None:
@@ -103,11 +103,11 @@ class NoteScheduler:
         )
 
     def _emit_pedal_release(self, rendered: RenderedNote) -> None:
-        """Let the sustain pedal up for a note whose sound outlasts its key release."""
-        if not self._settings.sustain_pedal or rendered.release_end_tick <= rendered.key_end_tick:
+        """Let the sustain pedal up for a note the pedal is still holding where it is let go of."""
+        note = rendered.note
+        if not self._settings.sustain_pedal or not self._pedal_holds_at_the_end_of(note):
             return
 
-        note = rendered.note
         self._emit(
             ControlChange(
                 position=EventPosition(tick=rendered.release_end_tick, sequence=note.release_end.sequence),
@@ -117,6 +117,18 @@ class NoteScheduler:
             ),
             OrderBand.PEDAL_LIFT,
         )
+
+    def _pedal_holds_at_the_end_of(self, note: SourceNote) -> bool:
+        """Whether the pedal the render carries is down where the note is let go of.
+
+        The render opens each note with the pedal its source stretch held and copies the messages
+        moving it from there on, so the value the source held ahead of that moment is the value the
+        render holds there too. A note the run itself lets go of — one held on to the shortest span
+        it sounds, one cut short at the longest — comes to rest on a key release alone, and lifting
+        the pedal there is what keeps its sound out of the notes laid out after it.
+        """
+        held = self._controllers.value_before(note.channel, SUSTAIN_PEDAL_CONTROL, note.release_end)
+        return held >= PEDAL_DOWN_THRESHOLD
 
     def _emit(self, event: PerformanceEvent, band: OrderBand) -> None:
         """Take in one voiced event, ranked within its tick by band and by emission order."""

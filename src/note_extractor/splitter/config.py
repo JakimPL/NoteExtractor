@@ -31,9 +31,10 @@ class SplitConfig(FrozenModel):
     that leaves it open takes the channels carrying notes in the source performance. `rolls` states
     the audio each note keeps around it, which the run records for the trimmer to cut by.
 
-    `min_note_seconds` and `max_note_seconds` state how long the notes of the render sound: one
-    sounding for less than the first is left out, and one outlasting the second is let go of where
-    that span runs out. A run leaving either open holds no bound of that kind.
+    `skip_below_seconds`, `min_note_seconds`, and `max_note_seconds` state how long the notes of the
+    render sound: one played over less than the first is left out of the run altogether, one the run
+    keeps is held on until it has sounded the second, and one still sounding at the third is let go
+    of there. A run leaving any of them open holds no bound of that kind.
     """
 
     tempo_bpm: float = Field(gt=0)
@@ -42,6 +43,7 @@ class SplitConfig(FrozenModel):
     cc_channels: frozenset[MidiChannel] | None
     gap_measures: float = Field(ge=0)
     sustain_pedal: bool
+    skip_below_seconds: NoteSeconds | None
     min_note_seconds: NoteSeconds | None
     max_note_seconds: NoteSeconds | None
     rolls: RollSettings
@@ -88,7 +90,7 @@ class SplitConfig(FrozenModel):
 
     @model_validator(mode="after")
     def _require_a_span_the_notes_of_a_render_fit_in(self) -> Self:
-        """Keep the shortest note a run takes within the longest note it sounds.
+        """Keep the shortest note a run sounds within the longest note it sounds.
 
         Raises:
             ValueError: If the shortest note outlasts the longest, which leaves a run stating two
@@ -118,6 +120,7 @@ class RenderSettings(FrozenModel):
     cc_channels: frozenset[MidiChannel]
     gap_measures: float = Field(ge=0)
     sustain_pedal: bool
+    skip_below_seconds: NoteSeconds | None
     min_note_seconds: NoteSeconds | None
     max_note_seconds: NoteSeconds | None
     rolls: RollSettings
@@ -136,6 +139,7 @@ class RenderSettings(FrozenModel):
             cc_channels=frozenset(note_channels) if config.cc_channels is None else config.cc_channels,
             gap_measures=config.gap_measures,
             sustain_pedal=config.sustain_pedal,
+            skip_below_seconds=config.skip_below_seconds,
             min_note_seconds=config.min_note_seconds,
             max_note_seconds=config.max_note_seconds,
             rolls=config.rolls,
@@ -169,11 +173,16 @@ class RenderSettings(FrozenModel):
         with wherever it sits. A longest note spans at least `MIN_NOTE_TICKS`, which leaves the
         render a stretch to sound every note it takes over.
         """
-        shortest, longest = self.min_note_seconds, self.max_note_seconds
+        longest = self.max_note_seconds
         return DurationBounds(
-            minimum_ticks=NO_MINIMUM_TICKS if shortest is None else self._note_ticks(shortest),
+            skip_below_ticks=self._lower_bound_ticks(self.skip_below_seconds),
+            minimum_ticks=self._lower_bound_ticks(self.min_note_seconds),
             maximum_ticks=None if longest is None else max(self._note_ticks(longest), MIN_NOTE_TICKS),
         )
+
+    def _lower_bound_ticks(self, seconds: float | None) -> int:
+        """Ticks a bound from below spans here, or `NO_MINIMUM_TICKS` where a run states none."""
+        return NO_MINIMUM_TICKS if seconds is None else self._note_ticks(seconds)
 
     def _note_ticks(self, seconds: float) -> int:
         """Ticks one stretch of seconds spans on the grid this render is laid out along."""

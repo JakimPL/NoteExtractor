@@ -24,7 +24,7 @@ def _config(**overrides: object) -> SplitConfig:
     These performances are written a few hundred ticks long, so a test about the pedal, the
     controllers, or the order a render is written in states no bounds and reads every note it plays.
     """
-    return split_config(**{"min_note_seconds": None, "max_note_seconds": None, **overrides})
+    return split_config(**{"skip_below_seconds": None, "min_note_seconds": None, "max_note_seconds": None, **overrides})
 
 
 def test_a_run_writes_a_render_and_the_manifest_timing_it(tmp_path: Path) -> None:
@@ -148,25 +148,59 @@ def test_a_note_let_go_of_where_it_starts_is_reported_before_anything_is_written
     assert not paths.manifest.exists()
 
 
-def test_a_note_too_short_to_be_worth_a_sample_reaches_neither_the_render_nor_the_manifest(
+def test_a_note_played_too_briefly_to_be_worth_sampling_reaches_neither_the_render_nor_the_manifest(
     tmp_path: Path,
 ) -> None:
     paths = _paths(tmp_path)
     _write(paths.source, _notes_of_two_lengths())
 
-    manifest = split_midi(paths.source, paths.render, paths.manifest, _config(min_note_seconds=1.0))
+    manifest = split_midi(paths.source, paths.render, paths.manifest, _config(skip_below_seconds=1.0))
 
     assert [note.pitch for note in manifest.notes] == [72]
     assert _strikes(paths.render) == [72]
 
 
-def test_a_run_naming_no_shortest_note_takes_every_note_it_finds(tmp_path: Path) -> None:
+def test_a_run_naming_no_briefest_note_takes_every_note_it_finds(tmp_path: Path) -> None:
     paths = _paths(tmp_path)
     _write(paths.source, _notes_of_two_lengths())
 
-    manifest = split_midi(paths.source, paths.render, paths.manifest, _config(min_note_seconds=None))
+    manifest = split_midi(paths.source, paths.render, paths.manifest, _config(skip_below_seconds=None))
 
     assert [note.pitch for note in manifest.notes] == [60, 72]
+
+
+def test_a_note_sounding_less_than_the_shortest_span_is_held_on_rather_than_left_out(tmp_path: Path) -> None:
+    """The render is laid out at 120 bpm, so one second of sample is 960 of its ticks."""
+    paths = _paths(tmp_path)
+    _write(paths.source, _notes_of_two_lengths())
+
+    manifest = split_midi(paths.source, paths.render, paths.manifest, _config(tempo_bpm=120.0, min_note_seconds=1.0))
+
+    brief = next(note for note in manifest.notes if note.pitch == 60)
+    assert brief.render.release_end_tick - brief.render.start_tick == 960
+    assert brief.render.release_end_seconds - brief.render.start_seconds == 1.0
+
+
+def test_a_note_held_on_keeps_its_key_down_to_the_end_of_the_span_in_the_render(tmp_path: Path) -> None:
+    """A key held down is what carries the sound on past the moment the performance let go of it."""
+    paths = _paths(tmp_path)
+    _write(paths.source, _notes_of_two_lengths())
+
+    split_midi(paths.source, paths.render, paths.manifest, _config(tempo_bpm=120.0, min_note_seconds=1.0))
+
+    assert _released_at(paths.render, pitch=60) == [960]
+
+
+def test_a_note_the_run_holds_on_is_recorded_over_the_stretch_the_render_holds_of_it(tmp_path: Path) -> None:
+    """The manifest states the notes a run sounded, which for a held note is the span it sounds."""
+    paths = _paths(tmp_path)
+    _write(paths.source, _notes_of_two_lengths())
+
+    manifest = split_midi(paths.source, paths.render, paths.manifest, _config(tempo_bpm=120.0, min_note_seconds=1.0))
+
+    brief = next(note for note in manifest.notes if note.pitch == 60)
+    assert brief.source.start_tick == 0
+    assert (brief.source.key_end_tick, brief.source.release_end_tick) == (960, 960)
 
 
 def test_a_note_outlasting_the_longest_span_is_let_go_of_where_that_span_runs_out(tmp_path: Path) -> None:
@@ -213,7 +247,7 @@ def test_a_run_whose_bounds_take_no_note_writes_a_render_holding_none(tmp_path: 
     paths = _paths(tmp_path)
     _write(paths.source, _notes_of_two_lengths())
 
-    manifest = split_midi(paths.source, paths.render, paths.manifest, _config(min_note_seconds=30.0))
+    manifest = split_midi(paths.source, paths.render, paths.manifest, _config(skip_below_seconds=30.0))
 
     assert manifest.notes == ()
     assert paths.render.exists()

@@ -8,8 +8,9 @@ split:
   cc_channels: null         # channels whose controllers reach the render; empty takes those carrying notes
   gap_measures: 0.25        # space left between one note's release and the next note's onset
   sustain_pedal: true       # hold each note as long as the sustain pedal held it
-  min_note_seconds: 1.0     # shortest a note may sound to be worth a sample; empty takes them all
-  max_note_seconds: 5.0     # longest a note sounds before it is let go of; empty lets it sound on
+  skip_below_seconds: 0.2   # played more briefly than this and a note is left out; empty takes them all
+  min_note_seconds: 1.0     # a note the run keeps is held on until it has sounded this long
+  max_note_seconds: 5.0     # a note still sounding here is let go of; empty lets it sound on
 
 rolls:
   pre_roll_seconds: 0.05    # audio kept ahead of each onset

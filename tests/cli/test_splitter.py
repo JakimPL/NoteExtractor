@@ -83,18 +83,33 @@ def test_the_rolls_a_document_states_are_recorded_for_the_trimmer(
     assert (rolls.pre_roll_seconds, rolls.post_roll_seconds) == (0.01, 0.4)
 
 
-def test_a_document_naming_a_shortest_note_leaves_the_briefer_ones_out(
+def test_a_document_naming_a_briefest_note_leaves_the_briefer_ones_out(
     tmp_path: Path,
     write_performance: WritePerformance,
     write_config: WriteConfig,
 ) -> None:
     """The spans a note sounds between arrive in the document, like every other value a run takes."""
     source = write_performance()
-    config = write_config(split={"min_note_seconds": 2.0})
+    config = write_config(split={"skip_below_seconds": 2.0})
 
     main([str(source), str(tmp_path / "render.mid"), "--config", str(config)])
 
     assert read_manifest(tmp_path / "render.notes.json").notes == ()
+
+
+def test_a_document_naming_a_shortest_note_holds_the_briefer_ones_on(
+    tmp_path: Path,
+    write_performance: WritePerformance,
+    write_config: WriteConfig,
+) -> None:
+    """Each fixture note sounds a second and a half, so the run holds both on to reach three."""
+    source = write_performance()
+    config = write_config(split={"min_note_seconds": 3.0})
+
+    main([str(source), str(tmp_path / "render.mid"), "--config", str(config)])
+
+    notes = read_manifest(tmp_path / "render.notes.json").notes
+    assert [note.render.release_end_seconds - note.render.start_seconds for note in notes] == [3.0, 3.0]
 
 
 def test_a_document_naming_a_longest_note_lets_a_held_one_go_where_it_runs_out(
@@ -175,6 +190,7 @@ def test_a_configuration_that_was_never_written_is_reported_on_stderr(
         {"tempo_bpm": -5},
         {"gap_measures": -1},
         {"tracked_ccs": [200]},
+        {"skip_below_seconds": 0},
         {"min_note_seconds": 0},
         {"max_note_seconds": -1},
     ],

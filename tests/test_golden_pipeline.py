@@ -36,6 +36,7 @@ SPLIT_CONFIG: Final = SplitConfig(
     cc_channels=None,
     gap_measures=0.25,
     sustain_pedal=True,
+    skip_below_seconds=None,
     min_note_seconds=None,
     max_note_seconds=None,
     rolls=RollSettings(pre_roll_seconds=0.005, post_roll_seconds=0.05),

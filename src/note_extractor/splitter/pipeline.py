@@ -68,11 +68,10 @@ def _sounded_notes(
     sustain_pedal: bool,
     bounds: DurationBounds,
 ) -> tuple[SourceNote, ...]:
-    """Notes of one performance the run sounds, each bounded by the moments it was played between.
+    """Notes of one performance the run sounds, each over the span its bounds allow.
 
-    A note the run takes sounds over a span its bounds allow, so the notes too short to be worth a
-    sample never reach the render and the ones outlasting the longest sample are let go of where it
-    runs out.
+    A note played too briefly to be worth sampling never reaches the render, and every note the run
+    keeps is held on to the shortest span it sounds and let go of at the longest.
     """
     played = (finalize(draft) for draft in NoteExtractor(sustain_pedal).extract(source))
     return sounded_notes(played, bounds)
