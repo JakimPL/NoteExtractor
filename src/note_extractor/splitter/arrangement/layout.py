@@ -14,8 +14,7 @@ FIRST_RENDER_TICK: Final = 0
 class RenderedNote(FrozenModel):
     """One source note placed on the render timeline under the index it was laid out at.
 
-    The three ticks keep the spans the note was played with, moved so that it starts at
-    `start_tick`.
+    The three ticks keep the spans the note sounds over, moved so that it starts at `start_tick`.
     """
 
     render_index: int = Field(ge=0)
@@ -41,8 +40,8 @@ def lay_out_notes(
 ) -> tuple[RenderedNote, ...]:
     """Notes placed one after another along the render timeline, in render order.
 
-    Every note keeps the spans it was played with, and `gap_ticks` separates the release of one
-    note from the onset of the next.
+    Every note keeps the spans it sounds over, and `gap_ticks` separates the release of one note
+    from the onset of the next.
 
     Raises:
         MidiSourceError: If a note is let go of where it starts, which leaves the render no stretch
@@ -63,7 +62,7 @@ def _placed(
     note: SourceNote,
     start_tick: int,
 ) -> RenderedNote:
-    """One note placed at the given tick of the render, keeping the spans it was played with.
+    """One note placed at the given tick of the render, keeping the spans it sounds over.
 
     Raises:
         MidiSourceError: If the note is let go of where it starts.

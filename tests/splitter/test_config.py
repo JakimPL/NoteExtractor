@@ -4,7 +4,13 @@ import pytest
 from pydantic import ValidationError
 
 from note_extractor.errors import ConfigurationError
-from note_extractor.splitter.config import MIN_GAP_TICKS, RenderSettings, SplitConfig
+from note_extractor.splitter.config import (
+    MIN_GAP_TICKS,
+    MIN_NOTE_TICKS,
+    NO_MINIMUM_TICKS,
+    RenderSettings,
+    SplitConfig,
+)
 from note_extractor.timeline.meter import TimeSignature
 
 from .conftest import COMMON_TIME, MEASURE_TICKS, TICKS_PER_BEAT, settings, split_config
@@ -17,6 +23,8 @@ SPLIT: Final[dict[str, object]] = {
     "cc_channels": None,
     "gap_measures": 0.5,
     "sustain_pedal": False,
+    "min_note_seconds": 1.0,
+    "max_note_seconds": 5.0,
 }
 
 
@@ -29,6 +37,7 @@ def test_a_document_states_every_setting_a_run_is_carried_out_with() -> None:
     assert config.cc_channels is None
     assert config.gap_measures == 0.5
     assert config.sustain_pedal is False
+    assert (config.min_note_seconds, config.max_note_seconds) == (1.0, 5.0)
     assert (config.rolls.pre_roll_seconds, config.rolls.post_roll_seconds) == (0.0, 0.25)
 
 
@@ -99,6 +108,10 @@ def test_a_signature_a_midi_header_states_is_accepted(denominator: int) -> None:
         ("tracked_ccs", frozenset({128})),
         ("tracked_ccs", frozenset({-1})),
         ("cc_channels", frozenset({16})),
+        ("min_note_seconds", 0.0),
+        ("min_note_seconds", -1.0),
+        ("max_note_seconds", 0.0),
+        ("max_note_seconds", -5.0),
     ],
 )
 def test_a_setting_outside_its_supported_range_is_rejected(field: str, value: Any) -> None:
@@ -129,6 +142,53 @@ def test_the_gap_between_notes_is_read_from_the_render_meter() -> None:
 def test_a_gap_rounding_down_to_nothing_still_separates_two_notes(gap_measures: float) -> None:
     """A shared tick would let one note's pedal release land among the next note's messages."""
     assert settings(split_config(gap_measures=gap_measures)).gap_ticks == MIN_GAP_TICKS
+
+
+def test_the_span_a_note_sounds_over_is_read_at_the_tempo_the_render_is_laid_out_at() -> None:
+    """The render is the timing the samples are cut from, so its own beat turns seconds into ticks."""
+    bounds = settings(split_config(tempo_bpm=120.0, min_note_seconds=1.0, max_note_seconds=5.0)).duration_bounds
+
+    assert bounds.minimum_ticks == 2 * TICKS_PER_BEAT
+    assert bounds.maximum_ticks == 10 * TICKS_PER_BEAT
+
+
+def test_a_slower_render_sounds_the_same_seconds_over_fewer_ticks() -> None:
+    bounds = settings(split_config(tempo_bpm=60.0, min_note_seconds=1.0, max_note_seconds=5.0)).duration_bounds
+
+    assert bounds.minimum_ticks == TICKS_PER_BEAT
+    assert bounds.maximum_ticks == 5 * TICKS_PER_BEAT
+
+
+def test_a_run_naming_no_shortest_note_takes_every_note_it_finds() -> None:
+    bounds = settings(split_config(min_note_seconds=None)).duration_bounds
+
+    assert bounds.minimum_ticks == NO_MINIMUM_TICKS
+
+
+def test_a_run_naming_no_longest_note_lets_every_note_sound_in_full() -> None:
+    bounds = settings(split_config(max_note_seconds=None)).duration_bounds
+
+    assert bounds.maximum_ticks is None
+
+
+@pytest.mark.parametrize("max_note_seconds", [0.0001, 0.001])
+def test_a_longest_note_rounding_down_to_nothing_still_sounds_over_a_tick(max_note_seconds: float) -> None:
+    """A note let go of where it starts leaves the render no stretch to sound it over."""
+    bounds = settings(split_config(min_note_seconds=None, max_note_seconds=max_note_seconds)).duration_bounds
+
+    assert bounds.maximum_ticks == MIN_NOTE_TICKS
+
+
+def test_a_shortest_note_outlasting_the_longest_is_rejected() -> None:
+    """No note meets both bounds at once, so the pair is turned away where it is written."""
+    with pytest.raises(ValidationError, match="shortest note must not outlast the longest"):
+        split_config(min_note_seconds=5.0, max_note_seconds=1.0)
+
+
+def test_a_shortest_note_as_long_as_the_longest_is_accepted() -> None:
+    config = split_config(min_note_seconds=2.0, max_note_seconds=2.0)
+
+    assert (config.min_note_seconds, config.max_note_seconds) == (2.0, 2.0)
 
 
 def test_a_run_following_the_pedal_tracks_it_alongside_the_named_controllers() -> None:

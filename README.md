@@ -53,10 +53,12 @@ split:
   cc_channels: null         # channels whose controllers reach the render; empty takes those carrying notes
   gap_measures: 0.25        # space left between one note's release and the next note's onset
   sustain_pedal: true       # hold each note as long as the sustain pedal held it
+  min_note_seconds: 1.0     # shortest a note may sound to be worth a sample; empty takes them all
+  max_note_seconds: 5.0     # longest a note sounds before it is let go of; empty lets it sound on
 
 rolls:
-  pre_roll_seconds: 0.0     # audio kept ahead of each onset
-  post_roll_seconds: 0.25   # audio kept past the moment each note was let go of
+  pre_roll_seconds: 0.05    # audio kept ahead of each onset
+  post_roll_seconds: 0.5    # audio kept past the moment each note was let go of
 
 trim:
   cc_decimals: 3            # decimal places a controller average keeps in a sample file name
@@ -70,6 +72,13 @@ stream-note-trimmer isolated.wav isolated.notes.json samples --config piano.yaml
 ```
 
 A document a command is given states every section, since no setting keeps a default of its own.
+
+**How long a note sounds** is settled by the split run: one sounding for less than `min_note_seconds`
+is left out of the render altogether, since nothing worth playing back is cut from it, and one still
+sounding at `max_note_seconds` is let go of there, key and pedal alike. Both are read at the tempo the
+render is laid out at, which is the timing the samples are cut from, and leaving either empty (`null`)
+holds no bound of that kind. A note left out is absent from the manifest too, so the run writes no
+sample for it.
 
 The **rolls belong to the split run**: it records them in the manifest, and the trimmer cuts the spans
 they describe without being told them again. Changing a roll means re-running `midi-note-splitter`,

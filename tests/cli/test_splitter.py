@@ -83,6 +83,49 @@ def test_the_rolls_a_document_states_are_recorded_for_the_trimmer(
     assert (rolls.pre_roll_seconds, rolls.post_roll_seconds) == (0.01, 0.4)
 
 
+def test_a_document_naming_a_shortest_note_leaves_the_briefer_ones_out(
+    tmp_path: Path,
+    write_performance: WritePerformance,
+    write_config: WriteConfig,
+) -> None:
+    """The spans a note sounds between arrive in the document, like every other value a run takes."""
+    source = write_performance()
+    config = write_config(split={"min_note_seconds": 2.0})
+
+    main([str(source), str(tmp_path / "render.mid"), "--config", str(config)])
+
+    assert read_manifest(tmp_path / "render.notes.json").notes == ()
+
+
+def test_a_document_naming_a_longest_note_lets_a_held_one_go_where_it_runs_out(
+    tmp_path: Path,
+    write_performance: WritePerformance,
+    write_config: WriteConfig,
+) -> None:
+    source = write_performance()
+    config = write_config(split={"min_note_seconds": None, "max_note_seconds": 1.0})
+
+    main([str(source), str(tmp_path / "render.mid"), "--config", str(config)])
+
+    notes = read_manifest(tmp_path / "render.notes.json").notes
+    assert [note.render.release_end_seconds - note.render.start_seconds for note in notes] == [1.0, 1.0]
+
+
+def test_a_shortest_note_outlasting_the_longest_is_reported_on_stderr(
+    tmp_path: Path,
+    write_performance: WritePerformance,
+    write_config: WriteConfig,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    source = write_performance()
+    config = write_config(split={"min_note_seconds": 5.0, "max_note_seconds": 1.0})
+
+    code = main([str(source), str(tmp_path / "render.mid"), "--config", str(config)])
+
+    assert code == FAILURE_EXIT_CODE
+    assert "shortest note must not outlast the longest" in capsys.readouterr().err
+
+
 @pytest.mark.parametrize("sustain_pedal", [True, False])
 def test_a_run_holds_each_note_as_long_as_its_document_asks_it_to(
     tmp_path: Path,
@@ -126,7 +169,16 @@ def test_a_configuration_that_was_never_written_is_reported_on_stderr(
     assert f"{PROGRAM_NAME}: cannot read configuration" in capsys.readouterr().err
 
 
-@pytest.mark.parametrize("setting", [{"tempo_bpm": -5}, {"gap_measures": -1}, {"tracked_ccs": [200]}])
+@pytest.mark.parametrize(
+    "setting",
+    [
+        {"tempo_bpm": -5},
+        {"gap_measures": -1},
+        {"tracked_ccs": [200]},
+        {"min_note_seconds": 0},
+        {"max_note_seconds": -1},
+    ],
+)
 def test_a_setting_outside_the_range_it_supports_is_reported_on_stderr(
     tmp_path: Path,
     write_performance: WritePerformance,

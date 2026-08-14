@@ -4,7 +4,7 @@ import pytest
 
 from note_extractor.errors import ConfigurationError
 from note_extractor.midi.events import EventPosition, TempoChange
-from note_extractor.timeline.tempo import TempoMap, microseconds_per_beat
+from note_extractor.timeline.tempo import TempoMap, microseconds_per_beat, ticks_for_seconds
 
 TICKS_PER_BEAT: Final = 480
 TEMPO_120_BPM: Final = 500_000
@@ -63,6 +63,25 @@ def test_a_constant_map_holds_one_tempo() -> None:
 def test_beat_length_rounds_to_whole_microseconds() -> None:
     assert microseconds_per_beat(120.0) == 500_000
     assert microseconds_per_beat(115.0) == 521_739
+
+
+def test_a_stretch_of_seconds_is_read_as_the_ticks_it_spans() -> None:
+    assert ticks_for_seconds(1.0, TICKS_PER_BEAT, TEMPO_120_BPM) == 960
+    assert ticks_for_seconds(5.0, TICKS_PER_BEAT, TEMPO_120_BPM) == 4800
+    assert ticks_for_seconds(1.0, TICKS_PER_BEAT, TEMPO_150_BPM) == 1200
+
+
+def test_a_stretch_of_no_seconds_spans_no_ticks() -> None:
+    assert ticks_for_seconds(0.0, TICKS_PER_BEAT, TEMPO_120_BPM) == 0
+
+
+@pytest.mark.parametrize(("seconds", "ticks"), [(0.5001, 480), (0.9999, 959), (0.0001, 0)])
+def test_a_stretch_reaching_between_two_ticks_is_taken_down_to_the_one_it_reaches(
+    seconds: float,
+    ticks: int,
+) -> None:
+    """A bound written in seconds is held in ticks, so its ticks must never run past it."""
+    assert ticks_for_seconds(seconds, TICKS_PER_BEAT, TEMPO_120_BPM) == ticks
 
 
 @pytest.mark.parametrize("beats_per_minute", [0.0, -1.0])

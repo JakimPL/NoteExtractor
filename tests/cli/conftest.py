@@ -23,6 +23,7 @@ from note_extractor.manifest.models import (
 from note_extractor.manifest.storage import write_manifest
 
 TICKS_PER_BEAT: Final = 480
+NOTE_TICKS: Final = 1440
 SAMPLE_RATE: Final = 1000
 TRACKED_CCS: Final = (1,)
 CC_AVERAGES: Final = {1: 63.875}
@@ -36,7 +37,11 @@ WriteConfig = Callable[..., Path]
 
 @pytest.fixture(name="write_performance")
 def fixture_write_performance(tmp_path: Path) -> WritePerformance:
-    """Writes one two note MIDI performance and gives back where it landed."""
+    """Writes one two note MIDI performance and gives back where it landed.
+
+    Each note sounds over `NOTE_TICKS`, which is long enough for the shipped settings to take it,
+    so a command reading the document the tool ships lays both notes out.
+    """
 
     def write() -> Path:
         path = tmp_path / "performance.mid"
@@ -48,9 +53,9 @@ def fixture_write_performance(tmp_path: Path) -> WritePerformance:
         performance = MidiTrack()
         performance.append(Message("control_change", channel=0, control=1, value=64, time=0))
         performance.append(Message("note_on", channel=0, note=60, velocity=100, time=0))
-        performance.append(Message("note_off", channel=0, note=60, velocity=5, time=480))
+        performance.append(Message("note_off", channel=0, note=60, velocity=5, time=NOTE_TICKS))
         performance.append(Message("note_on", channel=0, note=67, velocity=80, time=480))
-        performance.append(Message("note_off", channel=0, note=67, velocity=5, time=480))
+        performance.append(Message("note_off", channel=0, note=67, velocity=5, time=NOTE_TICKS))
         midi.tracks.append(performance)
         midi.save(path)
         return path

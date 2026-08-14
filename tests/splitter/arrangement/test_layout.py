@@ -30,7 +30,7 @@ def test_each_note_follows_the_release_of_the_one_before_it_across_the_gap() -> 
     ]
 
 
-def test_every_note_keeps_the_spans_it_was_played_with() -> None:
+def test_every_note_keeps_the_spans_it_sounds_over() -> None:
     note = _note(source_id=0, pitch=60, key_ticks=480, release_ticks=720)
     laid_out = lay_out_notes([_note(source_id=1, pitch=59, key_ticks=120, release_ticks=120), note], gap_ticks=100)
 

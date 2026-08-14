@@ -1,4 +1,5 @@
 import itertools
+import math
 from collections.abc import Sequence
 from typing import Final, Self
 
@@ -21,6 +22,15 @@ def microseconds_per_beat(beats_per_minute: float) -> int:
         raise ConfigurationError(f"tempo must be positive: {beats_per_minute}")
 
     return round(MICROSECONDS_PER_MINUTE / beats_per_minute)
+
+
+def ticks_for_seconds(seconds: float, ticks_per_beat: int, beat_microseconds: int) -> int:
+    """Whole ticks one stretch of seconds spans at the given beat length and resolution.
+
+    The stretch is taken down to the tick it reaches, so a span stated in seconds never turns into
+    ticks running past it, which is what lets a bound written in seconds be held in ticks.
+    """
+    return math.floor(seconds * MICROSECONDS_PER_SECOND * ticks_per_beat / beat_microseconds)
 
 
 class TempoMap:

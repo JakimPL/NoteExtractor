@@ -11,6 +11,7 @@ from .arrangement.score import arrange_notes
 from .cc_averages import average_control_values
 from .config import RenderSettings, SplitConfig
 from .controllers import ControllerTimeline
+from .duration import DurationBounds, sounded_notes
 from .extraction import NoteExtractor
 from .manifest_builder import ManifestBuilder, PerformanceTiming
 from .notes import SourceNote, finalize
@@ -38,7 +39,7 @@ def split_midi(
     settings = RenderSettings.from_config(config, source.ticks_per_beat, source.note_channels())
     source_timing = _source_timing(source)
 
-    notes = _played_notes(source, config.sustain_pedal)
+    notes = _sounded_notes(source, config.sustain_pedal, settings.duration_bounds)
     control_averages = {
         note.source_id: average_control_values(
             controllers,
@@ -62,12 +63,19 @@ def split_midi(
     return manifest
 
 
-def _played_notes(
+def _sounded_notes(
     source: SourceMidi,
     sustain_pedal: bool,
+    bounds: DurationBounds,
 ) -> tuple[SourceNote, ...]:
-    """Notes of one performance, each bounded by the moments it was played between."""
-    return tuple(finalize(draft) for draft in NoteExtractor(sustain_pedal).extract(source))
+    """Notes of one performance the run sounds, each bounded by the moments it was played between.
+
+    A note the run takes sounds over a span its bounds allow, so the notes too short to be worth a
+    sample never reach the render and the ones outlasting the longest sample are let go of where it
+    runs out.
+    """
+    played = (finalize(draft) for draft in NoteExtractor(sustain_pedal).extract(source))
+    return sounded_notes(played, bounds)
 
 
 def _source_timing(source: SourceMidi) -> PerformanceTiming:
